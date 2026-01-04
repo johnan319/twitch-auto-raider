@@ -1,0 +1,580 @@
+:root {
+  --bg-primary: #0e0e10;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #1f1f23;
+  --text-primary: #efeff1;
+  --text-secondary: #adadb8;
+  --accent: #9147ff;
+  --accent-hover: #772ce8;
+  --success: #00c853;
+  --danger: #eb0400;
+  --warning: #ffab00;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  transition: background 0.2s;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Navigation */
+.main-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.nav-brand a {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.nav-links {
+  display: flex;
+  gap: 24px;
+}
+
+.nav-links a {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.login-button,
+.logout-button {
+  background: var(--accent);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+
+.login-button:hover,
+.logout-button:hover {
+  background: var(--accent-hover);
+  text-decoration: none;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.status-badge .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status-badge.live {
+  background: rgba(235, 4, 0, 0.2);
+  color: #eb0400;
+}
+
+.status-badge.live .dot {
+  background: #eb0400;
+  animation: pulse 2s infinite;
+}
+
+.status-badge.offline {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.status-badge.offline .dot {
+  background: var(--text-secondary);
+}
+
+.status-badge .viewers {
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid currentColor;
+}
+
+.status-badge .category {
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid currentColor;
+  opacity: 0.8;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Recommendation Sections */
+.recommendation-section {
+  margin-bottom: 32px;
+}
+
+.recommendation-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  padding-left: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Recommendation Cards */
+.recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 0 24px 24px;
+}
+
+.recommendation-card {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid var(--bg-tertiary);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.card-header .avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.card-header .info h3 {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.card-header .login {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.source-badge {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.source-badge.warmlist {
+  background: rgba(255, 171, 0, 0.2);
+  color: var(--warning);
+}
+
+.source-badge.discovery {
+  background: rgba(0, 200, 83, 0.2);
+  color: var(--success);
+}
+
+.card-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.card-stats .viewers {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.recommendation-card .notes,
+.recommendation-card .last-raid {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.raid-button {
+  flex: 1;
+  background: var(--accent);
+  color: white;
+  padding: 12px;
+  font-size: 16px;
+}
+
+.raid-button:hover {
+  background: var(--accent-hover);
+}
+
+.exclude-button {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  width: 44px;
+}
+
+.exclude-button:hover {
+  background: rgba(235, 4, 0, 0.3);
+  color: var(--danger);
+}
+
+/* Raid Panel */
+.raid-panel {
+  background: rgba(0, 200, 83, 0.1);
+  border: 2px solid var(--success);
+  border-radius: 8px;
+  padding: 24px;
+  margin: 24px;
+  text-align: center;
+}
+
+.raid-panel h2 {
+  color: var(--success);
+  margin-bottom: 8px;
+}
+
+.raid-panel .countdown-note {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 16px 0;
+}
+
+.raid-panel .message-sent {
+  color: var(--success);
+  font-size: 14px;
+}
+
+.cancel-button {
+  background: var(--danger);
+  color: white;
+  margin-top: 16px;
+}
+
+/* Page Layouts */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  font-size: 24px;
+}
+
+/* Home Page */
+.home-hero {
+  text-align: center;
+  padding: 80px 24px;
+}
+
+.home-hero h1 {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.home-hero p {
+  font-size: 20px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+
+.home-hero .login-button {
+  font-size: 18px;
+  padding: 16px 32px;
+}
+
+/* History Table */
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.history-table th,
+.history-table td {
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.history-table th {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+}
+
+.history-table tr:not(:last-child) td {
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.history-table .status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.history-table .status.EXECUTED {
+  background: rgba(0, 200, 83, 0.2);
+  color: var(--success);
+}
+
+.history-table .status.QUEUED {
+  background: rgba(255, 171, 0, 0.2);
+  color: var(--warning);
+}
+
+.history-table .status.CANCELED,
+.history-table .status.FAILED {
+  background: rgba(235, 4, 0, 0.2);
+  color: var(--danger);
+}
+
+.rating-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.rating-buttons button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.rating-buttons button.active,
+.rating-buttons button:hover {
+  background: var(--accent);
+  color: white;
+}
+
+/* Settings Form */
+.settings-form {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.form-group .help {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-group input {
+  width: 18px;
+  height: 18px;
+}
+
+.save-button {
+  background: var(--accent);
+  color: white;
+  padding: 12px 24px;
+}
+
+/* Warm List */
+.warmlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.warmlist-entry {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.warmlist-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.warmlist-entry .info {
+  flex: 1;
+}
+
+.warmlist-entry h3 {
+  font-size: 16px;
+}
+
+.warmlist-entry .login {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.warmlist-entry .notes {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.warmlist-entry .remove-button {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.warmlist-entry .remove-button:hover {
+  background: rgba(235, 4, 0, 0.3);
+  color: var(--danger);
+}
+
+.add-form {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.add-form input {
+  flex: 1;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+
+.add-form button {
+  background: var(--accent);
+  color: white;
+}
+
+/* Loading & Error States */
+.loading {
+  text-align: center;
+  padding: 48px;
+  color: var(--text-secondary);
+}
+
+.error {
+  color: var(--danger);
+  padding: 12px;
+  background: rgba(235, 4, 0, 0.1);
+  border-radius: 4px;
+  margin: 12px 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px;
+  color: var(--text-secondary);
+}
+
+.empty-state button {
+  margin-top: 16px;
+}

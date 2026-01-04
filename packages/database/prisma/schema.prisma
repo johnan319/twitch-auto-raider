@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  twitchUserId    String   @unique
+  login           String
+  displayName     String
+  profileImageUrl String?
+  createdAt       DateTime @default(now())
+
+  oauthToken        OAuthToken?
+  settings          Settings?
+  warmList          WarmListEntry[]
+  raidExcludes      RaidExclude[]
+  raidHistory       RaidHistory[]
+  categoryBlocklist CategoryBlocklist[]
+}
+
+model OAuthToken {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scopes       String[]
+  updatedAt    DateTime @updatedAt
+}
+
+model Settings {
+  id                String  @id @default(uuid())
+  userId            String  @unique
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Language & Content filters
+  allowedLanguages  String[] @default(["en"])
+  matureContentFilter MatureFilter @default(EXCLUDE)
+
+  // Broadcaster type filter
+  broadcasterTypeFilter BroadcasterTypeFilter @default(ALL)
+
+  // Viewer count settings
+  minTargetViewers  Int     @default(5)
+  maxTargetViewers  Int     @default(500)
+  viewerCountPreference ViewerPreference @default(SIMILAR)
+
+  // Category settings
+  sameCategoryOnly  Boolean @default(true)
+
+  // Stream duration preference
+  streamDurationPreference DurationPreference @default(ANY)
+
+  // Chat messages
+  raidMessage       String  @default("We're raiding @{target} - show them some love!")
+  raidRunMessage    String  @default("Raid and run! See you next stream!")
+}
+
+enum MatureFilter {
+  INCLUDE    // Show all streams
+  EXCLUDE    // Hide mature streams
+  ONLY       // Only show mature streams
+}
+
+enum BroadcasterTypeFilter {
+  ALL        // Show everyone
+  AFFILIATE  // Affiliates and Partners only
+  PARTNER    // Partners only
+}
+
+enum ViewerPreference {
+  SMALLER    // Prefer smaller streamers
+  SIMILAR    // Prefer similar size
+  LARGER     // Prefer larger streamers
+  ANY        // No preference
+}
+
+enum DurationPreference {
+  NEW        // Prefer streams that just started (< 1 hour)
+  ESTABLISHED // Prefer streams going for a while (> 2 hours)
+  ANY        // No preference
+}
+
+model WarmListEntry {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  broadcasterId      String
+  broadcasterLogin   String
+  broadcasterName    String
+  profileImageUrl    String?
+  notes              String?
+  priority           Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  @@unique([userId, broadcasterId])
+}
+
+model RaidExclude {
+  id                    String  @id @default(uuid())
+  userId                String
+  user                  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  excludedBroadcasterId String
+  reason                String?
+
+  @@unique([userId, excludedBroadcasterId])
+}
+
+model RaidHistory {
+  id                 String     @id @default(uuid())
+  userId             String
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromBroadcasterId  String
+  toBroadcasterId    String
+  toBroadcasterLogin String
+  toBroadcasterName  String
+  categoryId         String?
+  categoryName       String?
+  startedAt          DateTime   @default(now())
+  executedAt         DateTime?
+  status             RaidStatus @default(QUEUED)
+  viewerCountAtRaid  Int?
+  manualRating       Int?
+  notes              String?
+
+  @@index([userId, startedAt(sort: Desc)])
+}
+
+enum RaidStatus {
+  QUEUED
+  CANCELED
+  EXECUTED
+  FAILED
+}
+
+model CategoryBlocklist {
+  id           String @id @default(uuid())
+  userId       String
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId   String
+  categoryName String
+
+  @@unique([userId, categoryId])
+}
