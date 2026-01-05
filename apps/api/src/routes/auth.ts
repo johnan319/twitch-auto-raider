@@ -3,7 +3,7 @@ import { randomBytes } from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { encrypt, decrypt } from '../lib/encryption.js';
 import { twitchApi } from '../services/twitch-api.js';
-import { eventSubService } from '../services/eventsub.js';
+// import { eventSubService } from '../services/eventsub.js'; // Temporarily disabled
 import { config } from '../lib/config.js';
 import { loggers } from '../lib/logger.js';
 
@@ -117,8 +117,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
       log.debug({ userId: user.id, expiresAt }, 'OAuth tokens stored');
 
-      // Subscribe to EventSub for this user
-      await eventSubService.subscribeToRaids(twitchUser.id, tokens.access_token);
+      // Subscribe to EventSub for this user (temporarily disabled)
+      // await eventSubService.subscribeToRaids(twitchUser.id, tokens.access_token);
 
       // Set session
       request.session.userId = user.id;
