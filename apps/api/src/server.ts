@@ -1,9 +1,15 @@
+console.log('[STARTUP] Loading modules...');
+
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import session from '@fastify/session';
 import rateLimit from '@fastify/rate-limit';
+
+console.log('[STARTUP] Loading config...');
 import { config } from './lib/config.js';
+
+console.log('[STARTUP] Loading routes...');
 import { authRoutes } from './routes/auth.js';
 import { statusRoutes } from './routes/status.js';
 import { recommendationsRoutes } from './routes/recommendations.js';
@@ -12,6 +18,8 @@ import { warmlistRoutes } from './routes/warmlist.js';
 import { settingsRoutes } from './routes/settings.js';
 import { eventSubService } from './services/eventsub.js';
 import { logger } from './lib/logger.js';
+
+console.log('[STARTUP] All modules loaded');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -116,10 +124,13 @@ async function main() {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
 
-  // Connect to EventSub
-  eventSubService.connect().catch((error) => {
-    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to connect to EventSub');
-  });
+  // Connect to EventSub (delayed to let server stabilize first)
+  setTimeout(() => {
+    logger.info('Connecting to EventSub after startup delay');
+    eventSubService.connect().catch((error) => {
+      logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to connect to EventSub');
+    });
+  }, 5000);
 
   // Start server
   try {
