@@ -1,7 +1,6 @@
 import WebSocket from 'ws';
 import { prisma } from '../lib/prisma.js';
 import { config } from '../lib/config.js';
-import { decrypt } from '../lib/encryption.js';
 
 const EVENTSUB_WS_URL = 'wss://eventsub.wss.twitch.tv/ws';
 const TWITCH_API_BASE = 'https://api.twitch.tv/helix';

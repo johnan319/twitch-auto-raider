@@ -117,7 +117,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   });
 
   // Logout
-  fastify.post('/auth/logout', async (request, reply) => {
+  fastify.post('/auth/logout', async (request, _reply) => {
     request.session.destroy();
     return { success: true };
   });
