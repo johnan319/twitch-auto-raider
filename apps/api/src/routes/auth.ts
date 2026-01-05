@@ -160,7 +160,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     return { success: true };
   });
 
-  // Exchange auth token for session (handles cross-origin cookie issues)
+  // Exchange auth token for a long-lived bearer token (handles cross-origin cookie issues)
   fastify.post<{ Body: { token: string } }>('/auth/exchange-token', async (request, reply) => {
     const { token } = request.body;
 
@@ -186,16 +186,22 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
       const tokenData = JSON.parse(tokenRecord.data);
 
-      // Set the user ID in the current session
-      request.session.userId = tokenData.userId;
-      await request.session.save();
+      // Create a long-lived bearer token
+      const bearerToken = randomBytes(32).toString('hex');
+      await prisma.session.create({
+        data: {
+          id: `bearer_${bearerToken}`,
+          data: JSON.stringify({ userId: tokenData.userId }),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        },
+      });
 
       // Delete the one-time token
       await prisma.session.delete({ where: { id: tokenRecord.id } });
 
       log.info({ userId: tokenData.userId }, 'Token exchanged successfully');
 
-      return { success: true };
+      return { success: true, bearerToken };
     } catch (error) {
       log.error({ error: error instanceof Error ? error.message : String(error) }, 'Token exchange failed');
       return reply.status(500).send({ error: 'Token exchange failed' });
@@ -204,27 +210,39 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Get current user
   fastify.get('/api/me', async (request, reply) => {
-    const cookieHeader = request.headers.cookie;
-    log.info({
-      ip: request.ip,
-      sessionId: request.session.sessionId,
-      userId: request.session.userId,
-      sessionKeys: Object.keys(request.session),
-      hasCookieHeader: !!cookieHeader,
-      cookieHeader: cookieHeader?.substring(0, 100), // First 100 chars
-    }, '/api/me called');
+    // Check for bearer token first
+    const authHeader = request.headers.authorization;
+    let userId: string | undefined;
 
-    if (!request.session.userId) {
-      log.warn({
-        ip: request.ip,
-        sessionId: request.session.sessionId,
-        hasCookieHeader: !!cookieHeader,
-      }, 'Unauthenticated /api/me request');
+    if (authHeader?.startsWith('Bearer ')) {
+      const bearerToken = authHeader.substring(7);
+      try {
+        const tokenRecord = await prisma.session.findUnique({
+          where: { id: `bearer_${bearerToken}` },
+        });
+
+        if (tokenRecord && tokenRecord.expiresAt > new Date()) {
+          const tokenData = JSON.parse(tokenRecord.data);
+          userId = tokenData.userId;
+          log.debug({ userId }, 'Authenticated via bearer token');
+        }
+      } catch (error) {
+        log.error({ error }, 'Error validating bearer token');
+      }
+    }
+
+    // Fall back to session cookie
+    if (!userId) {
+      userId = request.session.userId;
+    }
+
+    if (!userId) {
+      log.warn({ ip: request.ip }, 'Unauthenticated /api/me request');
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: request.session.userId },
+      where: { id: userId },
       select: {
         id: true,
         twitchUserId: true,

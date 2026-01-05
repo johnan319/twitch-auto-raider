@@ -1,5 +1,24 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+const TOKEN_KEY = 'auth_token';
+
+export function getStoredToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setStoredToken(token: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+}
+
+export function clearStoredToken(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+}
+
 interface ApiOptions extends Omit<RequestInit, 'body'> {
   body?: Record<string, unknown>;
 }
@@ -10,6 +29,12 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const headers: Record<string, string> = {
     ...rest.headers as Record<string, string>,
   };
+
+  // Add bearer token if available
+  const token = getStoredToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   // Only set Content-Type if we have a body
   if (body) {
@@ -180,5 +205,13 @@ export const getAuthUrl = () => `${API_URL}/auth/twitch/start`;
 
 export const logout = () => api<{ success: boolean }>('/auth/logout', { method: 'POST' });
 
-export const exchangeAuthToken = (token: string) =>
-  api<{ success: boolean }>('/auth/exchange-token', { method: 'POST', body: { token } });
+export const exchangeAuthToken = async (token: string): Promise<boolean> => {
+  const result = await api<{ success: boolean; bearerToken: string }>('/auth/exchange-token', {
+    method: 'POST',
+    body: { token },
+  });
+  if (result.bearerToken) {
+    setStoredToken(result.bearerToken);
+  }
+  return result.success;
+};
