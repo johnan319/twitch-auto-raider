@@ -32,7 +32,10 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     const state = randomBytes(16).toString('hex');
     request.session.oauthState = state;
 
-    log.info({ ip: request.ip, state }, 'OAuth flow started, setting state');
+    // Explicitly save session before redirect
+    await request.session.save();
+
+    log.info({ ip: request.ip, state, sessionId: request.session.sessionId }, 'OAuth flow started, state saved');
 
     const authUrl = twitchApi.getAuthorizationUrl(state);
     return reply.redirect(authUrl);
@@ -59,6 +62,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
         ip: request.ip,
         receivedState: state,
         sessionState: request.session.oauthState,
+        sessionId: request.session.sessionId,
         sessionKeys: Object.keys(request.session),
       }, 'OAuth callback state mismatch');
       return reply.redirect(`${config.cors.origin}/?error=invalid_state`);
