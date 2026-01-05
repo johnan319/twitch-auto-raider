@@ -5,7 +5,7 @@ import session from '@fastify/session';
 import { warmlistRoutes } from './warmlist.js';
 import { prisma } from '../lib/prisma.js';
 import * as authModule from '../lib/auth.js';
-import { createMockWarmListEntry, createMockUser } from '../test/helpers.js';
+import { createMockWarmListEntry } from '../test/helpers.js';
 
 // Mock dependencies
 vi.mock('../lib/prisma.js', () => ({
