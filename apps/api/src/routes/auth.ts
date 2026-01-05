@@ -138,6 +138,19 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Logout
   fastify.post('/auth/logout', async (request, _reply) => {
+    // Delete bearer token from database if provided
+    const authHeader = request.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      const bearerToken = authHeader.substring(7);
+      try {
+        await prisma.session.delete({
+          where: { id: `bearer_${bearerToken}` },
+        });
+      } catch {
+        // Token might not exist, that's fine
+      }
+    }
+
     request.session.destroy();
     return { success: true };
   });

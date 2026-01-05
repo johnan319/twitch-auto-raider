@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, logout, getAuthUrl } from '@/lib/api';
+import { User, logout, getAuthUrl, clearStoredToken } from '@/lib/api';
 
 interface NavProps {
   user: User | null;
@@ -11,9 +11,15 @@ interface NavProps {
 export function Nav({ user }: NavProps) {
   const pathname = usePathname();
 
-  const handleLogout = async () => {
-    await logout();
-    window.location.href = '/';
+  const handleLogout = () => {
+    // Call logout API first (needs the token to delete from server)
+    // Then clear local token and redirect
+    logout()
+      .catch(() => {})
+      .finally(() => {
+        clearStoredToken();
+        window.location.replace('/');
+      });
   };
 
   return (
