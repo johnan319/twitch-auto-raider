@@ -179,3 +179,6 @@ export const removeCategoryBlock = (id: string) =>
 export const getAuthUrl = () => `${API_URL}/auth/twitch/start`;
 
 export const logout = () => api<{ success: boolean }>('/auth/logout', { method: 'POST' });
+
+export const exchangeAuthToken = (token: string) =>
+  api<{ success: boolean }>('/auth/exchange-token', { method: 'POST', body: { token } });

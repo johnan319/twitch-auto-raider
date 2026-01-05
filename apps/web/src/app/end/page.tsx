@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Nav } from '@/components/Nav';
 import { StatusBadge } from '@/components/StatusBadge';
 import { RecommendationCard } from '@/components/RecommendationCard';
 import { RaidPanel } from '@/components/RaidPanel';
-import { useUser, useStreamStatus, useRecommendations } from '@/lib/hooks';
+import { useStreamStatus, useRecommendations } from '@/lib/hooks';
+import * as api from '@/lib/api';
 
 export default function EndStreamPage() {
   const router = useRouter();
-  const { user, loading: userLoading } = useUser();
+  const searchParams = useSearchParams();
+  const [user, setUser] = useState<api.User | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
   const { status, loading: statusLoading } = useStreamStatus(!!user);
   const { recommendations, loading: recsLoading, error: recsError, refetch } = useRecommendations();
 
@@ -18,6 +21,39 @@ export default function EndStreamPage() {
     raidHistoryId: string;
     targetName: string;
   } | null>(null);
+
+  const fetchUser = useCallback(async () => {
+    try {
+      const userData = await api.getMe();
+      setUser(userData);
+    } catch {
+      setUser(null);
+    } finally {
+      setUserLoading(false);
+    }
+  }, []);
+
+  // Handle auth token exchange on mount
+  useEffect(() => {
+    const authToken = searchParams.get('auth_token');
+
+    if (authToken) {
+      // Exchange token then fetch user
+      api.exchangeAuthToken(authToken)
+        .then(() => {
+          // Remove token from URL
+          router.replace('/end');
+          return fetchUser();
+        })
+        .catch((err) => {
+          console.error('Token exchange failed:', err);
+          setUserLoading(false);
+        });
+    } else {
+      // No token, just fetch user
+      fetchUser();
+    }
+  }, [searchParams, router, fetchUser]);
 
   useEffect(() => {
     if (!userLoading && !user) {

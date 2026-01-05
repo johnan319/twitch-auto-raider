@@ -135,7 +135,17 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
       log.info({ userId: user.id, twitchUserId: twitchUser.id, login: twitchUser.login, sessionId: request.session.sessionId }, 'Login successful, session saved');
 
-      return reply.redirect(`${config.cors.origin}/end`);
+      // Create a one-time auth token to pass via URL (for cross-origin cookie issues)
+      const authToken = randomBytes(32).toString('hex');
+      await prisma.session.create({
+        data: {
+          id: `auth_token_${authToken}`,
+          data: JSON.stringify({ userId: user.id, sessionId: request.session.sessionId }),
+          expiresAt: new Date(Date.now() + 60 * 1000), // 1 minute expiry
+        },
+      });
+
+      return reply.redirect(`${config.cors.origin}/end?auth_token=${authToken}`);
     } catch (err) {
       log.error({ error: err instanceof Error ? err.message : String(err), ip: request.ip }, 'OAuth callback error');
       return reply.redirect(`${config.cors.origin}/?error=auth_failed`);
@@ -148,6 +158,48 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     request.session.destroy();
     log.info({ userId }, 'User logged out');
     return { success: true };
+  });
+
+  // Exchange auth token for session (handles cross-origin cookie issues)
+  fastify.post<{ Body: { token: string } }>('/auth/exchange-token', async (request, reply) => {
+    const { token } = request.body;
+
+    if (!token) {
+      return reply.status(400).send({ error: 'Token required' });
+    }
+
+    try {
+      const tokenRecord = await prisma.session.findUnique({
+        where: { id: `auth_token_${token}` },
+      });
+
+      if (!tokenRecord) {
+        log.warn({ token: token.substring(0, 8) }, 'Auth token not found');
+        return reply.status(401).send({ error: 'Invalid or expired token' });
+      }
+
+      // Check if expired
+      if (tokenRecord.expiresAt < new Date()) {
+        await prisma.session.delete({ where: { id: tokenRecord.id } });
+        return reply.status(401).send({ error: 'Token expired' });
+      }
+
+      const tokenData = JSON.parse(tokenRecord.data);
+
+      // Set the user ID in the current session
+      request.session.userId = tokenData.userId;
+      await request.session.save();
+
+      // Delete the one-time token
+      await prisma.session.delete({ where: { id: tokenRecord.id } });
+
+      log.info({ userId: tokenData.userId }, 'Token exchanged successfully');
+
+      return { success: true };
+    } catch (error) {
+      log.error({ error: error instanceof Error ? error.message : String(error) }, 'Token exchange failed');
+      return reply.status(500).send({ error: 'Token exchange failed' });
+    }
   });
 
   // Get current user
