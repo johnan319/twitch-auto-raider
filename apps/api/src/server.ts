@@ -49,12 +49,26 @@ async function boot() {
     const { settingsRoutes } = await import('./routes/settings.js');
     console.log('[BOOT] Routes loaded');
 
-    // Verify database connection
+    // Verify database connection with retries
     console.log('[BOOT] Testing database connection...');
     const { prisma } = await import('./lib/prisma.js');
-    await prisma.$connect();
-    const userCount = await prisma.user.count();
-    console.log('[BOOT] Database connected, user count:', userCount);
+
+    const maxRetries = 5;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await prisma.$connect();
+        const userCount = await prisma.user.count();
+        console.log('[BOOT] Database connected, user count:', userCount);
+        break;
+      } catch (dbError) {
+        console.error(`[BOOT] Database connection attempt ${attempt}/${maxRetries} failed:`, dbError);
+        if (attempt === maxRetries) {
+          throw dbError;
+        }
+        console.log(`[BOOT] Retrying in ${attempt * 2} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+      }
+    }
 
     const isProduction = process.env.NODE_ENV === 'production';
 
