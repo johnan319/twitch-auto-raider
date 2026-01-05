@@ -30,9 +30,15 @@ export function StatusBadge({ status, loading }: StatusBadgeProps) {
     return (
       <div className="status-badge live">
         <span className="dot"></span>
-        <span>LIVE</span>
+        <span className="status-text">LIVE</span>
+        <span className="divider">•</span>
         <span className="viewers">{status.viewerCount.toLocaleString()} viewers</span>
-        {status.categoryName && <span className="category">{status.categoryName}</span>}
+        {status.categoryName && (
+          <>
+            <span className="divider">•</span>
+            <span className="category">{status.categoryName}</span>
+          </>
+        )}
       </div>
     );
   }

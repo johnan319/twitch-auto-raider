@@ -21,6 +21,7 @@ function HomeContent() {
   if (loading) {
     return (
       <div className="loading">
+        <div className="loading-spinner" />
         <p>Loading...</p>
       </div>
     );
@@ -45,20 +46,20 @@ function HomeContent() {
           Connect with Twitch
         </a>
 
-        <div style={{ marginTop: '48px', color: 'var(--text-secondary)' }}>
-          <h2 style={{ marginBottom: '16px' }}>How it works</h2>
-          <div style={{ display: 'flex', gap: '32px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <div style={{ maxWidth: '240px' }}>
+        <div className="home-features">
+          <h2>How it works</h2>
+          <div className="features-grid">
+            <div className="feature-card">
               <h3>1. Connect</h3>
-              <p>Link your Twitch account securely</p>
+              <p>Link your Twitch account securely with OAuth</p>
             </div>
-            <div style={{ maxWidth: '240px' }}>
+            <div className="feature-card">
               <h3>2. Pick</h3>
-              <p>Get smart recommendations from your favorites and same-category streamers</p>
+              <p>Get smart recommendations from favorites and same-category streamers</p>
             </div>
-            <div style={{ maxWidth: '240px' }}>
+            <div className="feature-card">
               <h3>3. Raid</h3>
-              <p>One click to start the raid with auto chat messages</p>
+              <p>One click to start the raid with automated chat messages</p>
             </div>
           </div>
         </div>
@@ -69,7 +70,12 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="loading"><p>Loading...</p></div>}>
+    <Suspense fallback={
+      <div className="loading">
+        <div className="loading-spinner" />
+        <p>Loading...</p>
+      </div>
+    }>
       <HomeContent />
     </Suspense>
   );

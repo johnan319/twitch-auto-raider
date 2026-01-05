@@ -60,7 +60,10 @@ export function RecommendationCard({ candidate, onRaidStarted, onExcluded }: Rec
       </div>
 
       <div className="card-stats">
-        <span className="viewers">{candidate.viewerCount.toLocaleString()} viewers</span>
+        <span className="viewers">
+          <span className="live-dot"></span>
+          {candidate.viewerCount.toLocaleString()} viewers
+        </span>
         {candidate.categoryName && (
           <span className="category">{candidate.categoryName}</span>
         )}
@@ -84,14 +87,14 @@ export function RecommendationCard({ candidate, onRaidStarted, onExcluded }: Rec
           onClick={handleRaid}
           disabled={loading}
         >
-          {loading ? 'Starting...' : 'Raid'}
+          {loading ? 'Starting...' : '⚡ Raid'}
         </button>
         <button
           className="exclude-button"
           onClick={handleExclude}
           title="Don't show this streamer"
         >
-          X
+          ✕
         </button>
       </div>
     </div>

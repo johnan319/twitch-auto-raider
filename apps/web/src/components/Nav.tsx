@@ -19,7 +19,10 @@ export function Nav({ user }: NavProps) {
   return (
     <nav className="main-nav">
       <div className="nav-brand">
-        <Link href="/">Raid Autopilot</Link>
+        <Link href="/">
+          <span className="logo-icon">⚡</span>
+          Raid Autopilot
+        </Link>
       </div>
 
       {user ? (

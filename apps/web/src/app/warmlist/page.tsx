@@ -46,7 +46,12 @@ export default function WarmListPage() {
   };
 
   if (userLoading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="loading">
+        <div className="loading-spinner" />
+        <p>Loading...</p>
+      </div>
+    );
   }
 
   if (!user) {
@@ -59,7 +64,7 @@ export default function WarmListPage() {
       <main className="page-container">
         <div className="page-header">
           <h1>Favorites</h1>
-          <span style={{ color: 'var(--text-secondary)' }}>{entries.length} streamers</span>
+          <span className="header-count">{entries.length} streamers</span>
         </div>
 
         <form className="add-form" onSubmit={handleAdd}>
@@ -74,7 +79,7 @@ export default function WarmListPage() {
             placeholder="Notes (optional)"
             value={newNotes}
             onChange={(e) => setNewNotes(e.target.value)}
-            style={{ maxWidth: '200px' }}
+            className="notes-input"
           />
           <button type="submit" disabled={adding || !newLogin.trim()}>
             {adding ? 'Adding...' : 'Add'}
@@ -85,7 +90,10 @@ export default function WarmListPage() {
         {error && <div className="error">{error}</div>}
 
         {loading ? (
-          <div className="loading">Loading...</div>
+          <div className="loading">
+            <div className="loading-spinner" />
+            <p>Loading...</p>
+          </div>
         ) : entries.length === 0 ? (
           <div className="empty-state">
             <p>No favorites yet.</p>

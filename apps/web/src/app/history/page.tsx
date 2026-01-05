@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Nav } from '@/components/Nav';
 import { useUser, useHistory } from '@/lib/hooks';
@@ -19,6 +19,13 @@ export default function HistoryPage() {
     }
   }, [user, userLoading, router]);
 
+  // Calculate stats
+  const stats = useMemo(() => {
+    const successful = raids.filter(r => r.status === 'EXECUTED').length;
+    const positive = raids.filter(r => r.manualRating === 1).length;
+    return { successful, positive };
+  }, [raids]);
+
   const handleRate = async (raidHistoryId: string, rating: number) => {
     await rateRaid(raidHistoryId, rating);
     fetchHistory(limit, page * limit);
@@ -30,7 +37,12 @@ export default function HistoryPage() {
   };
 
   if (userLoading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="loading">
+        <div className="loading-spinner" />
+        <p>Loading...</p>
+      </div>
+    );
   }
 
   if (!user) {
@@ -43,13 +55,31 @@ export default function HistoryPage() {
       <main className="page-container">
         <div className="page-header">
           <h1>Raid History</h1>
-          <span style={{ color: 'var(--text-secondary)' }}>{total} raids total</span>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="value">{total}</div>
+            <div className="label">Total Raids</div>
+          </div>
+          <div className="stat-card success">
+            <div className="value">{stats.successful}</div>
+            <div className="label">Successful</div>
+          </div>
+          <div className="stat-card accent">
+            <div className="value">{stats.positive}</div>
+            <div className="label">Positive Ratings</div>
+          </div>
         </div>
 
         {error && <div className="error">{error}</div>}
 
         {loading ? (
-          <div className="loading">Loading...</div>
+          <div className="loading">
+            <div className="loading-spinner" />
+            <p>Loading...</p>
+          </div>
         ) : raids.length === 0 ? (
           <div className="empty-state">
             <p>No raids yet. Start raiding to see your history!</p>
@@ -73,7 +103,7 @@ export default function HistoryPage() {
                     <td>
                       <strong>{raid.toBroadcasterName}</strong>
                       <br />
-                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      <span className="text-secondary">
                         @{raid.toBroadcasterLogin}
                       </span>
                     </td>
@@ -81,7 +111,7 @@ export default function HistoryPage() {
                     <td>
                       {new Date(raid.startedAt).toLocaleDateString()}
                       <br />
-                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      <span className="text-secondary">
                         {new Date(raid.startedAt).toLocaleTimeString()}
                       </span>
                     </td>
@@ -120,21 +150,19 @@ export default function HistoryPage() {
             </table>
 
             {total > limit && (
-              <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+              <div className="pagination">
                 <button
                   onClick={() => handlePageChange(page - 1)}
                   disabled={page === 0}
-                  style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                 >
                   Previous
                 </button>
-                <span style={{ padding: '8px 16px', color: 'var(--text-secondary)' }}>
+                <span className="page-info">
                   Page {page + 1} of {Math.ceil(total / limit)}
                 </span>
                 <button
                   onClick={() => handlePageChange(page + 1)}
                   disabled={(page + 1) * limit >= total}
-                  style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                 >
                   Next
                 </button>
@@ -143,6 +171,13 @@ export default function HistoryPage() {
           </>
         )}
       </main>
+
+      <style jsx>{`
+        .text-secondary {
+          font-size: 13px;
+          color: var(--text-secondary);
+        }
+      `}</style>
     </>
   );
 }

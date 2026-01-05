@@ -68,7 +68,12 @@ function EndStreamContent() {
   }, [user, refetch]);
 
   if (userLoading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="loading">
+        <div className="loading-spinner" />
+        <p>Loading...</p>
+      </div>
+    );
   }
 
   if (!user) {
@@ -104,8 +109,8 @@ function EndStreamContent() {
           />
         ) : (
           <>
-            <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ color: 'var(--text-secondary)' }}>
+            <div className="recommendations-header">
+              <p className="recommendations-subtitle">
                 {status?.isLive
                   ? 'Choose a streamer to raid when you end your stream:'
                   : "You're not live, but you can still browse raid targets:"}
@@ -113,7 +118,7 @@ function EndStreamContent() {
               <button
                 onClick={refetch}
                 disabled={recsLoading}
-                style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                className="refresh-button"
               >
                 {recsLoading ? 'Loading...' : 'Refresh'}
               </button>
@@ -177,7 +182,12 @@ function EndStreamContent() {
 
 export default function EndStreamPage() {
   return (
-    <Suspense fallback={<div className="loading">Loading...</div>}>
+    <Suspense fallback={
+      <div className="loading">
+        <div className="loading-spinner" />
+        <p>Loading...</p>
+      </div>
+    }>
       <EndStreamContent />
     </Suspense>
   );

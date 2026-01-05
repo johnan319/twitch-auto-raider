@@ -107,7 +107,12 @@ export default function SettingsPage() {
   };
 
   if (userLoading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="loading">
+        <div className="loading-spinner" />
+        <p>Loading...</p>
+      </div>
+    );
   }
 
   if (!user) {
@@ -125,7 +130,10 @@ export default function SettingsPage() {
         {error && <div className="error">{error}</div>}
 
         {loading ? (
-          <div className="loading">Loading...</div>
+          <div className="loading">
+            <div className="loading-spinner" />
+            <p>Loading...</p>
+          </div>
         ) : (
           <form className="settings-form" onSubmit={handleSubmit}>
             <section className="settings-section">
@@ -135,7 +143,10 @@ export default function SettingsPage() {
                 <label>Allowed Languages</label>
                 <div className="language-grid">
                   {LANGUAGES.map((lang) => (
-                    <label key={lang.code} className="language-checkbox">
+                    <label
+                      key={lang.code}
+                      className={`language-checkbox ${formData.allowedLanguages.includes(lang.code) ? 'checked' : ''}`}
+                    >
                       <input
                         type="checkbox"
                         checked={formData.allowedLanguages.includes(lang.code)}
@@ -146,7 +157,7 @@ export default function SettingsPage() {
                   ))}
                 </div>
                 <p className="help">
-                  Only recommend streamers broadcasting in these languages. Leave empty for all languages.
+                  Only recommend streamers broadcasting in these languages.
                 </p>
               </div>
 
@@ -163,9 +174,6 @@ export default function SettingsPage() {
                   <option value="EXCLUDE">Exclude mature streams</option>
                   <option value="ONLY">Only mature streams</option>
                 </select>
-                <p className="help">
-                  Filter recommendations based on mature content flag.
-                </p>
               </div>
 
               <div className="form-group">
@@ -181,9 +189,6 @@ export default function SettingsPage() {
                   <option value="AFFILIATE">Affiliates & Partners only</option>
                   <option value="PARTNER">Partners only</option>
                 </select>
-                <p className="help">
-                  Filter by broadcaster partnership status. Note: This filter applies to discovery only.
-                </p>
               </div>
             </section>
 
@@ -231,9 +236,6 @@ export default function SettingsPage() {
                   <option value="SIMILAR">Prefer similar size</option>
                   <option value="LARGER">Prefer larger streamers</option>
                 </select>
-                <p className="help">
-                  Prioritize streamers based on their viewer count relative to yours.
-                </p>
               </div>
             </section>
 
@@ -270,28 +272,22 @@ export default function SettingsPage() {
                   <option value="NEW">Prefer new streams (&lt; 1 hour)</option>
                   <option value="ESTABLISHED">Prefer established streams (&gt; 2 hours)</option>
                 </select>
-                <p className="help">
-                  Prioritize streamers based on how long they've been live.
-                </p>
               </div>
             </section>
 
             <section className="settings-section">
               <h2>Category Blocklist</h2>
-              <p className="section-description">
-                Block specific categories from appearing in recommendations.
-              </p>
 
               <div className="blocklist-list">
                 {blocklist.length === 0 ? (
-                  <p className="empty-state">No blocked categories</p>
+                  <p className="blocklist-empty">No blocked categories</p>
                 ) : (
                   blocklist.map((entry) => (
                     <div key={entry.id} className="blocklist-item">
                       <span>{entry.categoryName}</span>
                       <button
                         type="button"
-                        className="remove-btn"
+                        className="blocklist-remove"
                         onClick={() => removeBlock(entry.id)}
                       >
                         Remove
@@ -301,7 +297,7 @@ export default function SettingsPage() {
                 )}
               </div>
 
-              <div className="add-category-form">
+              <div className="add-form">
                 <input
                   type="text"
                   placeholder="Category ID (e.g., 509658)"
@@ -310,7 +306,7 @@ export default function SettingsPage() {
                 />
                 <input
                   type="text"
-                  placeholder="Category Name (e.g., Just Chatting)"
+                  placeholder="Category Name"
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                 />
@@ -353,7 +349,7 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            <button type="submit" className="save-button" disabled={saving}>
+            <button type="submit" className={`save-button ${saved ? 'saved' : ''}`} disabled={saving}>
               {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Settings'}
             </button>
           </form>
@@ -361,120 +357,40 @@ export default function SettingsPage() {
       </main>
 
       <style jsx>{`
-        .settings-section {
-          background: var(--card-bg);
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          padding: 24px;
-          margin-bottom: 24px;
-        }
-
-        .settings-section h2 {
-          font-size: 1.25rem;
-          margin: 0 0 16px 0;
-          color: var(--text);
-        }
-
-        .section-description {
-          color: var(--text-secondary);
-          margin-bottom: 16px;
-        }
-
-        .language-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-          gap: 8px;
-        }
-
-        .language-checkbox {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 12px;
-          background: var(--bg);
-          border: 1px solid var(--border);
-          border-radius: 4px;
-          cursor: pointer;
-        }
-
-        .language-checkbox:hover {
-          border-color: var(--primary);
-        }
-
-        .language-checkbox input:checked + span {
-          color: var(--primary);
-        }
-
-        .range-inputs {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-        }
-
-        .range-inputs input {
-          width: 120px;
-        }
-
         .blocklist-list {
-          margin-bottom: 16px;
+          margin-bottom: var(--space-md);
+        }
+
+        .blocklist-empty {
+          color: var(--text-tertiary);
+          font-style: italic;
+          padding: var(--space-md);
         }
 
         .blocklist-item {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 8px 12px;
-          background: var(--bg);
-          border: 1px solid var(--border);
-          border-radius: 4px;
-          margin-bottom: 8px;
+          padding: var(--space-sm) var(--space-md);
+          background: var(--bg-tertiary);
+          border: 1px solid var(--glass-border);
+          border-radius: var(--radius-md);
+          margin-bottom: var(--space-sm);
         }
 
-        .remove-btn {
-          background: var(--error);
+        .blocklist-remove {
+          background: var(--danger-subtle);
+          color: var(--danger);
+          border: 1px solid var(--danger);
+          padding: var(--space-xs) var(--space-sm);
+          border-radius: var(--radius-sm);
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        .blocklist-remove:hover {
+          background: var(--danger);
           color: white;
-          border: none;
-          padding: 4px 12px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 0.875rem;
-        }
-
-        .remove-btn:hover {
-          opacity: 0.9;
-        }
-
-        .add-category-form {
-          display: flex;
-          gap: 8px;
-        }
-
-        .add-category-form input {
-          flex: 1;
-        }
-
-        .add-category-form button {
-          background: var(--primary);
-          color: white;
-          border: none;
-          padding: 8px 16px;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-
-        .empty-state {
-          color: var(--text-secondary);
-          font-style: italic;
-        }
-
-        select {
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid var(--border);
-          border-radius: 4px;
-          background: var(--bg);
-          color: var(--text);
-          font-size: 1rem;
         }
       `}</style>
     </>

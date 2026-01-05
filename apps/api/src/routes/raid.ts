@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { prisma, RaidStatus } from 'database';
+import { RaidStatus } from 'database';
+import { prisma } from '../lib/prisma.js';
 import { getAccessToken } from './auth.js';
 import { getAuthUserId } from '../lib/auth.js';
 import { twitchApi } from '../services/twitch-api.js';

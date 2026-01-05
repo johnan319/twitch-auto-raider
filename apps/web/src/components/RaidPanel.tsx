@@ -28,14 +28,16 @@ export function RaidPanel({ targetName, raidHistoryId: _raidHistoryId, onCancele
 
   return (
     <div className="raid-panel">
+      <div className="raid-glow"></div>
       <div className="raid-info">
+        <div className="raid-icon">⚡</div>
         <h2>Raid Queued!</h2>
-        <p>Raiding <strong>{targetName}</strong></p>
+        <p className="raid-target">Raiding <strong>{targetName}</strong></p>
         <p className="countdown-note">
           The raid will execute after the 90-second countdown in Twitch,
           or you can click "Raid Now" in your Twitch dashboard.
         </p>
-        <p className="message-sent">Chat messages have been sent!</p>
+        <p className="message-sent">✓ Chat messages have been sent!</p>
       </div>
 
       {error && <p className="error">{error}</p>}
