@@ -20,6 +20,9 @@ COPY apps/api ./apps/api
 # Generate Prisma client
 RUN cd packages/database && npx prisma generate
 
+# Build database package
+RUN pnpm --filter database build
+
 # Build API
 RUN pnpm --filter api build
 
@@ -46,7 +49,8 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod
 
-# Copy generated Prisma client from builder
+# Copy built database package and generated Prisma client
+COPY --from=builder /app/packages/database/dist ./packages/database/dist
 COPY --from=builder /app/packages/database/generated ./packages/database/generated
 
 USER api

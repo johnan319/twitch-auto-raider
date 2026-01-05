@@ -1,14 +1,14 @@
-import { PrismaClient } from '../generated/client';
+import { PrismaClient } from '../generated/client/index.js';
 
 declare global {
   var prisma: PrismaClient | undefined;
 }
 
-export const prisma = global.prisma || new PrismaClient();
+export const prisma = globalThis.prisma || new PrismaClient();
 
 if (process.env.NODE_ENV !== 'production') {
-  global.prisma = prisma;
+  globalThis.prisma = prisma;
 }
 
-export * from '../generated/client';
-export { MatureFilter, BroadcasterTypeFilter, ViewerPreference, DurationPreference, RaidStatus } from '../generated/client';
+export * from '../generated/client/index.js';
+export { MatureFilter, BroadcasterTypeFilter, ViewerPreference, DurationPreference, RaidStatus } from '../generated/client/index.js';
