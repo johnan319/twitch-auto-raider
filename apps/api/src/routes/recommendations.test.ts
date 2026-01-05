@@ -80,20 +80,36 @@ describe('recommendationsRoutes', () => {
       const mockUser = createMockUser();
       const mockRecommendations = [
         {
-          id: '111',
-          login: 'streamer1',
-          displayName: 'Streamer One',
+          broadcasterId: '111',
+          broadcasterLogin: 'streamer1',
+          broadcasterName: 'Streamer One',
+          profileImageUrl: 'https://example.com/avatar1.png',
           viewerCount: 50,
+          categoryId: '509658',
           categoryName: 'Just Chatting',
-          score: 85,
+          language: 'en',
+          isMature: false,
+          startedAt: '2024-01-01T00:00:00Z',
+          source: 'discovery' as const,
+          lastRaidDate: null,
+          warmListPriority: null,
+          warmListNotes: null,
         },
         {
-          id: '222',
-          login: 'streamer2',
-          displayName: 'Streamer Two',
+          broadcasterId: '222',
+          broadcasterLogin: 'streamer2',
+          broadcasterName: 'Streamer Two',
+          profileImageUrl: 'https://example.com/avatar2.png',
           viewerCount: 100,
+          categoryId: '12345',
           categoryName: 'Gaming',
-          score: 75,
+          language: 'en',
+          isMature: false,
+          startedAt: '2024-01-01T01:00:00Z',
+          source: 'discovery' as const,
+          lastRaidDate: null,
+          warmListPriority: null,
+          warmListNotes: null,
         },
       ];
 
@@ -109,7 +125,7 @@ describe('recommendationsRoutes', () => {
       expect(response.statusCode).toBe(200);
       const body = response.json();
       expect(body.recommendations).toHaveLength(2);
-      expect(body.recommendations[0].login).toBe('streamer1');
+      expect(body.recommendations[0].broadcasterLogin).toBe('streamer1');
       expect(recommendationsService.getRecommendations).toHaveBeenCalledWith(
         'mock_access_token',
         mockUser.id,

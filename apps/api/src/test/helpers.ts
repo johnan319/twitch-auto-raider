@@ -1,6 +1,13 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
 import session from '@fastify/session';
+import {
+  RaidStatus,
+  MatureFilter,
+  BroadcasterTypeFilter,
+  ViewerPreference,
+  DurationPreference,
+} from 'database';
 
 /**
  * Build a Fastify app for testing with minimal plugins
@@ -75,13 +82,13 @@ export function createMockSettings(overrides = {}) {
     id: 'test-settings-id',
     userId: 'test-user-id',
     allowedLanguages: ['en'],
-    matureContentFilter: 'EXCLUDE',
-    broadcasterTypeFilter: 'ALL',
+    matureContentFilter: MatureFilter.EXCLUDE,
+    broadcasterTypeFilter: BroadcasterTypeFilter.ALL,
     minTargetViewers: 5,
     maxTargetViewers: 500,
-    viewerCountPreference: 'SIMILAR',
+    viewerCountPreference: ViewerPreference.SIMILAR,
     sameCategoryOnly: true,
-    streamDurationPreference: 'ANY',
+    streamDurationPreference: DurationPreference.ANY,
     raidMessage: "We're raiding @{target} - show them some love!",
     raidRunMessage: 'Raid and run! See you next stream!',
     ...overrides,
@@ -109,7 +116,7 @@ export function createMockWarmListEntry(overrides = {}) {
 /**
  * Create a mock raid history entry for testing
  */
-export function createMockRaidHistory(overrides = {}) {
+export function createMockRaidHistory(overrides: { status?: RaidStatus; [key: string]: unknown } = {}) {
   return {
     id: 'test-raid-id',
     userId: 'test-user-id',
@@ -121,7 +128,7 @@ export function createMockRaidHistory(overrides = {}) {
     categoryName: 'Just Chatting',
     startedAt: new Date(),
     executedAt: null,
-    status: 'QUEUED',
+    status: RaidStatus.QUEUED,
     viewerCountAtRaid: null,
     manualRating: null,
     notes: null,

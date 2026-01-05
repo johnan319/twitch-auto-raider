@@ -7,6 +7,7 @@ import { prisma } from '../lib/prisma.js';
 import * as authModule from '../lib/auth.js';
 import { twitchApi } from '../services/twitch-api.js';
 import { createMockUser, createMockSettings, createMockRaidHistory } from '../test/helpers.js';
+import { RaidStatus } from 'database';
 
 // Mock dependencies
 vi.mock('../lib/prisma.js', () => ({
@@ -129,7 +130,7 @@ describe('raidRoutes', () => {
       vi.mocked(authModule.getAuthUserId).mockResolvedValue('test-user-id');
       vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser);
       vi.mocked(twitchApi.startRaid).mockRejectedValue(new Error('Twitch API error'));
-      vi.mocked(prisma.raidHistory.create).mockResolvedValue(createMockRaidHistory({ status: 'FAILED' }));
+      vi.mocked(prisma.raidHistory.create).mockResolvedValue(createMockRaidHistory({ status: RaidStatus.FAILED }));
 
       const response = await app.inject({
         method: 'POST',

@@ -6,6 +6,7 @@ import { settingsRoutes } from './settings.js';
 import { prisma } from '../lib/prisma.js';
 import * as authModule from '../lib/auth.js';
 import { createMockSettings } from '../test/helpers.js';
+import { MatureFilter } from 'database';
 
 // Mock dependencies
 vi.mock('../lib/prisma.js', () => ({
@@ -135,7 +136,7 @@ describe('settingsRoutes', () => {
     });
 
     it('should accept valid enum values', async () => {
-      const mockSettings = createMockSettings({ matureContentFilter: 'INCLUDE' });
+      const mockSettings = createMockSettings({ matureContentFilter: MatureFilter.INCLUDE });
 
       vi.mocked(authModule.getAuthUserId).mockResolvedValue('test-user-id');
       vi.mocked(prisma.settings.update).mockResolvedValue(mockSettings);
