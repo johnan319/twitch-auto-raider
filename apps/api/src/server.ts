@@ -1,6 +1,7 @@
 console.log('[BOOT] Starting server...');
 console.log('[BOOT] Node version:', process.version);
 console.log('[BOOT] Environment:', process.env.NODE_ENV);
+console.log('[BOOT] PORT env:', process.env.PORT);
 
 // Catch any uncaught errors
 process.on('uncaughtException', (err) => {
@@ -10,6 +11,19 @@ process.on('uncaughtException', (err) => {
 
 process.on('unhandledRejection', (reason) => {
   console.error('[FATAL] Unhandled Rejection:', reason);
+});
+
+// Log shutdown signals
+process.on('SIGTERM', () => {
+  console.log('[SHUTDOWN] Received SIGTERM signal');
+});
+
+process.on('SIGINT', () => {
+  console.log('[SHUTDOWN] Received SIGINT signal');
+});
+
+process.on('exit', (code) => {
+  console.log('[SHUTDOWN] Process exiting with code:', code);
 });
 
 // Use dynamic imports so we can catch and log errors
@@ -34,6 +48,13 @@ async function boot() {
     const { warmlistRoutes } = await import('./routes/warmlist.js');
     const { settingsRoutes } = await import('./routes/settings.js');
     console.log('[BOOT] Routes loaded');
+
+    // Verify database connection
+    console.log('[BOOT] Testing database connection...');
+    const { prisma } = await import('./lib/prisma.js');
+    await prisma.$connect();
+    const userCount = await prisma.user.count();
+    console.log('[BOOT] Database connected, user count:', userCount);
 
     const isProduction = process.env.NODE_ENV === 'production';
 
