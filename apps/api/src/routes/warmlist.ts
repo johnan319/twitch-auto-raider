@@ -32,8 +32,6 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
     });
 
-    log.debug({ userId, count: entries.length }, 'Warm list fetched');
-
     return { entries };
   });
 
@@ -51,8 +49,6 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
 
     const { broadcasterLogin, notes, priority } = parseResult.data;
 
-    log.info({ userId, broadcasterLogin, priority }, 'Adding to warm list');
-
     try {
       const accessToken = await getAccessToken(userId);
 
@@ -60,7 +56,6 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
       const user = await twitchApi.getUserByLogin(accessToken, broadcasterLogin);
 
       if (!user) {
-        log.warn({ userId, broadcasterLogin }, 'Channel not found on Twitch');
         return reply.status(404).send({ error: 'Channel not found' });
       }
 
@@ -87,13 +82,6 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
           priority,
         },
       });
-
-      log.info({
-        userId,
-        broadcasterId: user.id,
-        broadcasterLogin: user.login,
-        priority,
-      }, 'Added to warm list');
 
       return { entry };
     } catch (error) {
@@ -132,12 +120,6 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
       data: parseResult.data,
     });
 
-    log.info({
-      userId,
-      entryId: request.params.id,
-      updatedFields: Object.keys(parseResult.data),
-    }, 'Warm list entry updated');
-
     return { entry: updated };
   });
 
@@ -164,12 +146,6 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
     await prisma.warmListEntry.delete({
       where: { id: request.params.id },
     });
-
-    log.info({
-      userId,
-      entryId: request.params.id,
-      broadcasterLogin: entry.broadcasterLogin,
-    }, 'Removed from warm list');
 
     return { success: true };
   });

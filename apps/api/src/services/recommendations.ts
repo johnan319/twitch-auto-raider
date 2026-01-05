@@ -1,8 +1,5 @@
 import { prisma, MatureFilter, BroadcasterTypeFilter, ViewerPreference, DurationPreference } from 'database';
 import { twitchApi } from './twitch-api.js';
-import { loggers } from '../lib/logger.js';
-
-const log = loggers.recommendations;
 
 export interface RecommendationCandidate {
   broadcasterId: string;
@@ -46,16 +43,13 @@ export class RecommendationsService {
     accessToken: string,
     userId: string
   ): Promise<UserStream> {
-    log.debug({ userId }, 'Checking user stream status');
     const streams = await twitchApi.getStreams(accessToken, [userId]);
     const stream = streams.find((s) => s.user_id === userId);
 
     if (!stream) {
-      log.debug({ userId, isLive: false }, 'User is offline');
       return { isLive: false, viewerCount: 0, categoryId: null, categoryName: null };
     }
 
-    log.debug({ userId, isLive: true, viewerCount: stream.viewer_count, category: stream.game_name }, 'User stream status');
     return {
       isLive: true,
       viewerCount: stream.viewer_count,
@@ -167,9 +161,6 @@ export class RecommendationsService {
     userId: string,
     twitchUserId: string
   ): Promise<RecommendationCandidate[]> {
-    const start = Date.now();
-    log.info({ userId, twitchUserId }, 'Starting recommendation generation');
-
     // Fetch user settings
     const settings = await prisma.settings.findUnique({
       where: { userId },
@@ -186,8 +177,6 @@ export class RecommendationsService {
       sameCategoryOnly: settings?.sameCategoryOnly ?? true,
     };
 
-    log.debug({ userId, filterSettings }, 'Loaded user filter settings');
-
     // Get exclude list
     const excludes = await prisma.raidExclude.findMany({
       where: { userId },
@@ -202,8 +191,6 @@ export class RecommendationsService {
       select: { categoryId: true },
     });
     const blockedCategorySet = new Set<string>(blockedCategories.map((c) => c.categoryId));
-
-    log.debug({ userId, excludeCount: excludeSet.size, blockedCategoryCount: blockedCategorySet.size }, 'Loaded exclusions');
 
     // Get recent raids (last 7 days) to deprioritize
     const recentRaids = await prisma.raidHistory.findMany({
@@ -228,14 +215,11 @@ export class RecommendationsService {
       ratingMap.set(r.toBroadcasterId, current + (r.manualRating ?? 0));
     }
 
-    log.debug({ userId, recentRaidCount: recentRaidMap.size, ratedCount: ratingMap.size }, 'Loaded raid history');
-
     // Get user's current stream status for category-based recommendations
     const userStatus = await this.getUserStreamStatus(accessToken, twitchUserId);
 
     const candidates: RecommendationCandidate[] = [];
     const seenIds = new Set<string>();
-    let filteredOutCount = 0;
 
     // --- Warm List Candidates (priority 1) ---
     const warmList = await prisma.warmListEntry.findMany({
@@ -243,14 +227,10 @@ export class RecommendationsService {
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
     });
 
-    log.debug({ userId, warmListCount: warmList.length }, 'Fetched warm list');
-
     if (warmList.length > 0) {
       const warmListIds = warmList.map((w) => w.broadcasterId);
       const liveStreams = await twitchApi.getStreams(accessToken, warmListIds);
       const liveMap = new Map(liveStreams.map((s) => [s.user_id, s]));
-
-      log.debug({ userId, warmListLive: liveMap.size }, 'Warm list live streams');
 
       for (const entry of warmList) {
         if (excludeSet.has(entry.broadcasterId)) continue;
@@ -263,15 +243,11 @@ export class RecommendationsService {
         const warmlistFilters = { ...filterSettings, allowedLanguages: [] as string[] };
         const filterResult = this.passesFilters(stream, warmlistFilters, blockedCategorySet);
         if (!filterResult.passes) {
-          log.debug({ broadcasterId: entry.broadcasterId, reason: filterResult.reason }, 'Warm list entry filtered out');
-          filteredOutCount++;
           continue;
         }
 
         // Apply category filter if enabled
         if (filterSettings.sameCategoryOnly && userStatus.categoryId && stream.game_id !== userStatus.categoryId) {
-          log.debug({ broadcasterId: entry.broadcasterId, reason: 'category_mismatch' }, 'Warm list entry filtered out');
-          filteredOutCount++;
           continue;
         }
 
@@ -299,9 +275,6 @@ export class RecommendationsService {
       }
     }
 
-    const warmListCandidates = candidates.length;
-    log.debug({ userId, warmListCandidates }, 'Warm list candidates found');
-
     // --- Category Discovery (priority 2) ---
     if (userStatus.isLive && userStatus.categoryId) {
       const categoryStreams = await twitchApi.getStreamsByCategory(
@@ -310,8 +283,6 @@ export class RecommendationsService {
         100
       );
 
-      log.debug({ userId, categoryId: userStatus.categoryId, categoryStreams: categoryStreams.length }, 'Fetched category streams');
-
       // Score and sort discovery candidates with randomization
       const discoveryScored = categoryStreams
         .filter((stream) => {
@@ -319,7 +290,6 @@ export class RecommendationsService {
           if (seenIds.has(stream.user_id)) return false;
           const filterResult = this.passesFilters(stream, filterSettings, blockedCategorySet);
           if (!filterResult.passes) {
-            filteredOutCount++;
             return false;
           }
           return true;
@@ -359,8 +329,6 @@ export class RecommendationsService {
           warmListNotes: null,
         });
       }
-    } else {
-      log.debug({ userId, isLive: userStatus.isLive, categoryId: userStatus.categoryId }, 'Skipping category discovery');
     }
 
     // Sort final list: warmlist first, then by score
@@ -369,18 +337,6 @@ export class RecommendationsService {
       if (b.source === 'warmlist' && a.source !== 'warmlist') return 1;
       return 0;
     });
-
-    const duration = Date.now() - start;
-    log.info({
-      userId,
-      duration,
-      totalCandidates: result.length,
-      warmListCandidates,
-      discoveryCandidates: result.length - warmListCandidates,
-      filteredOut: filteredOutCount,
-      userIsLive: userStatus.isLive,
-      userCategory: userStatus.categoryName,
-    }, 'Recommendations generated');
 
     return result;
   }

@@ -4,7 +4,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // Create a standalone logger for use outside of Fastify context
 export const logger = pino({
-  level: process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug'),
+  level: process.env.LOG_LEVEL || 'warn',
   ...(isProduction
     ? {}
     : {
@@ -44,12 +44,9 @@ export async function loggedApiCall<T>(
   fn: () => Promise<T>
 ): Promise<T> {
   const start = Date.now();
-  log.debug({ operation, ...context }, `Starting ${operation}`);
 
   try {
     const result = await fn();
-    const duration = Date.now() - start;
-    log.info({ operation, duration, ...context }, `Completed ${operation}`);
     return result;
   } catch (error) {
     const duration = Date.now() - start;

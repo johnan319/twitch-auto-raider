@@ -30,13 +30,6 @@ export async function statusRoutes(fastify: FastifyInstance): Promise<void> {
         user.twitchUserId
       );
 
-      log.debug({
-        userId: user.id,
-        isLive: status.isLive,
-        viewerCount: status.viewerCount,
-        category: status.categoryName,
-      }, 'Stream status fetched');
-
       return {
         isLive: status.isLive,
         viewerCount: status.viewerCount,

@@ -23,8 +23,6 @@ export async function recommendationsRoutes(fastify: FastifyInstance): Promise<v
       return reply.status(401).send({ error: 'User not found' });
     }
 
-    log.info({ userId: user.id, twitchUserId: user.twitchUserId }, 'Fetching recommendations');
-
     try {
       const accessToken = await getAccessToken(userId);
       const recommendations = await recommendationsService.getRecommendations(
@@ -32,8 +30,6 @@ export async function recommendationsRoutes(fastify: FastifyInstance): Promise<v
         user.id,
         user.twitchUserId
       );
-
-      log.info({ userId: user.id, count: recommendations.length }, 'Recommendations returned');
 
       return { recommendations };
     } catch (error) {

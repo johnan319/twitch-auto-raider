@@ -35,8 +35,6 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     // Explicitly save session before redirect
     await request.session.save();
 
-    log.info({ ip: request.ip, state, sessionId: request.session.sessionId }, 'OAuth flow started, state saved');
-
     const authUrl = twitchApi.getAuthorizationUrl(state);
     return reply.redirect(authUrl);
   });
@@ -58,13 +56,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     if (state !== request.session.oauthState) {
-      log.warn({
-        ip: request.ip,
-        receivedState: state,
-        sessionState: request.session.oauthState,
-        sessionId: request.session.sessionId,
-        sessionKeys: Object.keys(request.session),
-      }, 'OAuth callback state mismatch');
+      log.warn({ ip: request.ip }, 'OAuth callback state mismatch');
       return reply.redirect(`${config.cors.origin}/?error=invalid_state`);
     }
 
@@ -76,8 +68,6 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
       // Get user profile
       const twitchUser = await twitchApi.getUser(tokens.access_token);
-
-      log.info({ twitchUserId: twitchUser.id, login: twitchUser.login }, 'User authenticated via Twitch');
 
       // Upsert user
       const user = await prisma.user.upsert({
@@ -94,8 +84,6 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
           profileImageUrl: twitchUser.profile_image_url,
         },
       });
-
-      log.debug({ userId: user.id, twitchUserId: twitchUser.id }, 'User record upserted');
 
       // Create default settings if not exists
       await prisma.settings.upsert({
@@ -124,16 +112,12 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
         },
       });
 
-      log.debug({ userId: user.id, expiresAt }, 'OAuth tokens stored');
-
       // Subscribe to EventSub for this user (temporarily disabled)
       // await eventSubService.subscribeToRaids(twitchUser.id, tokens.access_token);
 
       // Set session and save before redirect
       request.session.userId = user.id;
       await request.session.save();
-
-      log.info({ userId: user.id, twitchUserId: twitchUser.id, login: twitchUser.login, sessionId: request.session.sessionId }, 'Login successful, session saved');
 
       // Create a one-time auth token to pass via URL (for cross-origin cookie issues)
       const authToken = randomBytes(32).toString('hex');
@@ -154,9 +138,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Logout
   fastify.post('/auth/logout', async (request, _reply) => {
-    const userId = request.session.userId;
     request.session.destroy();
-    log.info({ userId }, 'User logged out');
     return { success: true };
   });
 
@@ -174,7 +156,6 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       });
 
       if (!tokenRecord) {
-        log.warn({ token: token.substring(0, 8) }, 'Auth token not found');
         return reply.status(401).send({ error: 'Invalid or expired token' });
       }
 
@@ -199,8 +180,6 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       // Delete the one-time token
       await prisma.session.delete({ where: { id: tokenRecord.id } });
 
-      log.info({ userId: tokenData.userId }, 'Token exchanged successfully');
-
       return { success: true, bearerToken };
     } catch (error) {
       log.error({ error: error instanceof Error ? error.message : String(error) }, 'Token exchange failed');
@@ -214,11 +193,6 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     const authHeader = request.headers.authorization;
     let userId: string | undefined;
 
-    log.info({
-      hasAuthHeader: !!authHeader,
-      authHeaderPrefix: authHeader?.substring(0, 15),
-    }, '/api/me called');
-
     if (authHeader?.startsWith('Bearer ')) {
       const bearerToken = authHeader.substring(7);
       try {
@@ -229,9 +203,6 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
         if (tokenRecord && tokenRecord.expiresAt > new Date()) {
           const tokenData = JSON.parse(tokenRecord.data);
           userId = tokenData.userId;
-          log.info({ userId }, 'Authenticated via bearer token');
-        } else {
-          log.warn({ tokenFound: !!tokenRecord }, 'Bearer token invalid or expired');
         }
       } catch (error) {
         log.error({ error }, 'Error validating bearer token');
@@ -244,7 +215,6 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     if (!userId) {
-      log.warn({ ip: request.ip }, 'Unauthenticated /api/me request');
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
@@ -260,12 +230,10 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     });
 
     if (!user) {
-      log.warn({ userId: request.session.userId }, 'Session references non-existent user');
       request.session.destroy();
       return reply.status(401).send({ error: 'User not found' });
     }
 
-    log.debug({ userId: user.id }, 'User profile fetched');
     return user;
   });
 }
@@ -284,8 +252,6 @@ export async function getAccessToken(userId: string): Promise<string> {
   // Check if token expires within 5 minutes
   const expiresIn = tokenRecord.expiresAt.getTime() - Date.now();
   if (expiresIn < 5 * 60 * 1000) {
-    log.info({ userId, expiresIn }, 'Token expiring soon, refreshing');
-
     // Refresh token
     const refreshToken = decrypt(tokenRecord.refreshToken);
     const newTokens = await twitchApi.refreshToken(refreshToken);
@@ -302,7 +268,6 @@ export async function getAccessToken(userId: string): Promise<string> {
       },
     });
 
-    log.info({ userId, newExpiresAt }, 'Token refreshed successfully');
     return newTokens.access_token;
   }
 

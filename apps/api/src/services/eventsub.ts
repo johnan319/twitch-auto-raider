@@ -50,12 +50,10 @@ export class EventSubService {
     const url = this.reconnectUrl || EVENTSUB_WS_URL;
     this.reconnectUrl = null;
 
-    log.info({ url }, 'Connecting to EventSub WebSocket');
-
     this.ws = new WebSocket(url);
 
     this.ws.on('open', () => {
-      log.info('WebSocket connection established');
+      // Connection established
     });
 
     this.ws.on('message', (data: WebSocket.Data) => {
@@ -72,7 +70,6 @@ export class EventSubService {
       this.cleanup();
 
       // Reconnect after a delay
-      log.info('Scheduling reconnection in 5 seconds');
       setTimeout(() => this.connect(), 5000);
     });
 
@@ -90,9 +87,7 @@ export class EventSubService {
   }
 
   private handleMessage(message: EventSubMessage): void {
-    const { message_type, message_id } = message.metadata;
-
-    log.debug({ messageType: message_type, messageId: message_id }, 'Received EventSub message');
+    const { message_type } = message.metadata;
 
     switch (message_type) {
       case 'session_welcome':
@@ -105,7 +100,6 @@ export class EventSubService {
 
       case 'session_reconnect':
         this.reconnectUrl = message.payload.session?.reconnect_url || null;
-        log.info({ reconnectUrl: this.reconnectUrl }, 'Reconnect requested by server');
         break;
 
       case 'notification':
@@ -121,8 +115,6 @@ export class EventSubService {
   private async handleWelcome(message: EventSubMessage): Promise<void> {
     this.sessionId = message.payload.session?.id || null;
     const keepaliveSeconds = message.payload.session?.keepalive_timeout_seconds || 10;
-
-    log.info({ sessionId: this.sessionId, keepaliveSeconds }, 'EventSub session established');
 
     this.resetKeepalive(keepaliveSeconds);
 
@@ -147,16 +139,8 @@ export class EventSubService {
     const event = message.payload.event;
 
     if (subscriptionType === 'channel.raid' && event) {
-      log.info({
-        from: event.from_broadcaster_user_name,
-        fromId: event.from_broadcaster_user_id,
-        to: event.to_broadcaster_user_name,
-        toId: event.to_broadcaster_user_id,
-        viewers: event.viewers,
-      }, 'Raid event received');
-
       // Update raid history
-      const updateResult = await prisma.raidHistory.updateMany({
+      await prisma.raidHistory.updateMany({
         where: {
           fromBroadcasterId: event.from_broadcaster_user_id,
           toBroadcasterId: event.to_broadcaster_user_id,
@@ -168,8 +152,6 @@ export class EventSubService {
           viewerCountAtRaid: event.viewers,
         },
       });
-
-      log.info({ updatedCount: updateResult.count, fromId: event.from_broadcaster_user_id, toId: event.to_broadcaster_user_id }, 'Raid history updated');
     }
   }
 
@@ -179,44 +161,29 @@ export class EventSubService {
       return;
     }
 
-    log.info('Subscribing all users to raid events');
-
     const users = await prisma.user.findMany({
       include: { oauthToken: true },
     });
-
-    log.info({ userCount: users.length }, 'Found users to subscribe');
-
-    let successCount = 0;
-    let errorCount = 0;
 
     for (const user of users) {
       if (user.oauthToken) {
         try {
           await this.subscribeToRaids(user.twitchUserId, user.oauthToken.accessToken);
-          successCount++;
         } catch (error) {
-          errorCount++;
           log.error({ userId: user.id, twitchUserId: user.twitchUserId, error: error instanceof Error ? error.message : String(error) }, 'Failed to subscribe user');
         }
       }
     }
-
-    log.info({ successCount, errorCount, total: users.length }, 'Completed user subscription batch');
   }
 
   async subscribeToRaids(broadcasterId: string, accessToken: string): Promise<void> {
     if (!this.sessionId) {
-      log.debug({ broadcasterId }, 'No session ID, skipping subscription');
       return;
     }
 
     if (this.subscriptions.has(broadcasterId)) {
-      log.debug({ broadcasterId }, 'Already subscribed to raids');
       return;
     }
-
-    log.debug({ broadcasterId }, 'Creating raid subscription');
 
     try {
       const response = await fetch(`${TWITCH_API_BASE}/eventsub/subscriptions`, {
@@ -250,7 +217,6 @@ export class EventSubService {
 
       if (subscriptionId) {
         this.subscriptions.set(broadcasterId, subscriptionId);
-        log.info({ broadcasterId, subscriptionId }, 'Subscribed to channel.raid');
       }
     } catch (error) {
       log.error({ broadcasterId, error: error instanceof Error ? error.message : String(error) }, 'Subscription error');
@@ -260,11 +226,8 @@ export class EventSubService {
   async unsubscribeFromRaids(broadcasterId: string, accessToken: string): Promise<void> {
     const subscriptionId = this.subscriptions.get(broadcasterId);
     if (!subscriptionId) {
-      log.debug({ broadcasterId }, 'No subscription to remove');
       return;
     }
-
-    log.debug({ broadcasterId, subscriptionId }, 'Removing raid subscription');
 
     try {
       const response = await fetch(`${TWITCH_API_BASE}/eventsub/subscriptions?id=${subscriptionId}`, {
@@ -277,7 +240,6 @@ export class EventSubService {
 
       if (response.ok) {
         this.subscriptions.delete(broadcasterId);
-        log.info({ broadcasterId, subscriptionId }, 'Unsubscribed from channel.raid');
       } else {
         const error = await response.text();
         log.error({ broadcasterId, subscriptionId, status: response.status, error }, 'Failed to unsubscribe');
