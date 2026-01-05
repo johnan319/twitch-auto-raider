@@ -75,8 +75,12 @@ async function boot() {
     await fastify.register(cookie);
     console.log('[MAIN] Cookie registered');
 
+    // Use database-backed session store to survive container restarts
+    const { sessionStore } = await import('./lib/session-store.js');
+
     await fastify.register(session, {
       secret: config.session.secret,
+      store: sessionStore as any,
       cookie: {
         secure: isProduction,
         httpOnly: true,
@@ -85,7 +89,7 @@ async function boot() {
       },
       saveUninitialized: false,
     });
-    console.log('[MAIN] Session registered');
+    console.log('[MAIN] Session registered with database store');
 
     // Register routes
     await fastify.register(authRoutes);

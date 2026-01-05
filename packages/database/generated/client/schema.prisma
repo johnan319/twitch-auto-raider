@@ -150,3 +150,11 @@ model CategoryBlocklist {
 
   @@unique([userId, categoryId])
 }
+
+model Session {
+  id        String   @id
+  data      String // JSON session data
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

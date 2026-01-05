@@ -199,6 +199,12 @@ exports.Prisma.CategoryBlocklistScalarFieldEnum = {
   categoryName: 'categoryName'
 };
 
+exports.Prisma.SessionScalarFieldEnum = {
+  id: 'id',
+  data: 'data',
+  expiresAt: 'expiresAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -252,7 +258,8 @@ exports.Prisma.ModelName = {
   WarmListEntry: 'WarmListEntry',
   RaidExclude: 'RaidExclude',
   RaidHistory: 'RaidHistory',
-  CategoryBlocklist: 'CategoryBlocklist'
+  CategoryBlocklist: 'CategoryBlocklist',
+  Session: 'Session'
 };
 
 /**
