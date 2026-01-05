@@ -124,13 +124,15 @@ async function main() {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
 
-  // Connect to EventSub (delayed to let server stabilize first)
-  setTimeout(() => {
-    logger.info('Connecting to EventSub after startup delay');
-    eventSubService.connect().catch((error) => {
-      logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to connect to EventSub');
-    });
-  }, 5000);
+  // EventSub temporarily disabled for debugging
+  // TODO: Re-enable once API is stable
+  // setTimeout(() => {
+  //   logger.info('Connecting to EventSub after startup delay');
+  //   eventSubService.connect().catch((error) => {
+  //     logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to connect to EventSub');
+  //   });
+  // }, 5000);
+  logger.info('EventSub disabled for debugging');
 
   // Start server
   try {
