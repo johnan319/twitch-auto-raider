@@ -29,6 +29,9 @@ importers:
       '@fastify/session':
         specifier: ^11.0.1
         version: 11.1.1
+      '@types/pino':
+        specifier: ^7.0.5
+        version: 7.0.5
       database:
         specifier: workspace:*
         version: link:../../packages/database
@@ -38,6 +41,9 @@ importers:
       fastify:
         specifier: ^5.1.0
         version: 5.6.2
+      pino:
+        specifier: ^10.1.0
+        version: 10.1.0
       ws:
         specifier: ^8.18.0
         version: 8.18.3
@@ -105,7 +111,7 @@ importers:
         version: 9.39.2
       eslint-config-next:
         specifier: ^16.1.1
-        version: 16.1.1(@typescript-eslint/parser@8.51.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2)(typescript@5.9.3)
+        version: 16.1.1(eslint@9.39.2)(typescript@5.9.3)
       eslint-plugin-react:
         specifier: ^7.37.5
         version: 7.37.5(eslint@9.39.2)
@@ -730,6 +736,10 @@ packages:
 
   '@types/node@22.19.3':
     resolution: {integrity: sha512-1N9SBnWYOJTrNZCdh/yJE+t910Y128BoyY+zBLWhL3r0TYzlTmFdXrPwHL9DyFZmlEXNQQolTZh3KHV31QDhyA==}
+
+  '@types/pino@7.0.5':
+    resolution: {integrity: sha512-wKoab31pknvILkxAF8ss+v9iNyhw5Iu/0jLtRkUD74cNfOOLJNnqfFKAv0r7wVaTQxRZtWrMpGfShwwBjOcgcg==}
+    deprecated: This is a stub types definition. pino provides its own type definitions, so you do not need this installed.
 
   '@types/react-dom@19.2.3':
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
@@ -2794,6 +2804,10 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  '@types/pino@7.0.5':
+    dependencies:
+      pino: 10.1.0
+
   '@types/react-dom@19.2.3(@types/react@19.2.7)':
     dependencies:
       '@types/react': 19.2.7
@@ -3356,13 +3370,13 @@ snapshots:
 
   escape-string-regexp@4.0.0: {}
 
-  eslint-config-next@16.1.1(@typescript-eslint/parser@8.51.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2)(typescript@5.9.3):
+  eslint-config-next@16.1.1(eslint@9.39.2)(typescript@5.9.3):
     dependencies:
       '@next/eslint-plugin-next': 16.1.1
       eslint: 9.39.2
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2)
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2)
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.2))(eslint@9.39.2)
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2)
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.39.2)
       eslint-plugin-react: 7.37.5(eslint@9.39.2)
       eslint-plugin-react-hooks: 7.0.1(eslint@9.39.2)
@@ -3384,7 +3398,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2):
+  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.2))(eslint@9.39.2):
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
       debug: 4.4.3
@@ -3395,22 +3409,21 @@ snapshots:
       tinyglobby: 0.2.15
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2)
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2)
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.51.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2):
+  eslint-module-utils@2.12.1(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.2))(eslint@9.39.2))(eslint@9.39.2):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
-      '@typescript-eslint/parser': 8.51.0(eslint@9.39.2)(typescript@5.9.3)
       eslint: 9.39.2
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2)
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.2))(eslint@9.39.2)
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2):
+  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -3421,7 +3434,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.39.2
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.51.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2)
+      eslint-module-utils: 2.12.1(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@9.39.2))(eslint@9.39.2))(eslint@9.39.2)
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -3432,8 +3445,6 @@ snapshots:
       semver: 6.3.1
       string.prototype.trimend: 1.0.9
       tsconfig-paths: 3.15.0
-    optionalDependencies:
-      '@typescript-eslint/parser': 8.51.0(eslint@9.39.2)(typescript@5.9.3)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack

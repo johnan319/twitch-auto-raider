@@ -1,5 +1,7 @@
 import { config } from '../lib/config.js';
+import { loggers, loggedApiCall } from '../lib/logger.js';
 
+const log = loggers.twitch;
 const TWITCH_API_BASE = 'https://api.twitch.tv/helix';
 const TWITCH_AUTH_BASE = 'https://id.twitch.tv/oauth2';
 
@@ -51,6 +53,11 @@ export class TwitchApiService {
     accessToken: string,
     options: RequestInit = {}
   ): Promise<T> {
+    const start = Date.now();
+    const method = options.method || 'GET';
+
+    log.debug({ endpoint, method }, 'Making Twitch API request');
+
     const response = await fetch(`${TWITCH_API_BASE}${endpoint}`, {
       ...options,
       headers: {
@@ -61,11 +68,15 @@ export class TwitchApiService {
       },
     });
 
+    const duration = Date.now() - start;
+
     if (!response.ok) {
       const error = await response.text();
+      log.error({ endpoint, method, status: response.status, error, duration }, 'Twitch API error');
       throw new Error(`Twitch API error: ${response.status} - ${error}`);
     }
 
+    log.debug({ endpoint, method, status: response.status, duration }, 'Twitch API response received');
     return response.json() as Promise<T>;
   }
 
@@ -78,85 +89,109 @@ export class TwitchApiService {
       state,
     });
 
-    return `${TWITCH_AUTH_BASE}/authorize?${params}`;
+    const url = `${TWITCH_AUTH_BASE}/authorize?${params}`;
+    log.debug({ scopes: config.twitch.scopes }, 'Generated authorization URL');
+    return url;
   }
 
   async exchangeCode(code: string): Promise<TwitchTokenResponse> {
-    const response = await fetch(`${TWITCH_AUTH_BASE}/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: config.twitch.clientId,
-        client_secret: config.twitch.clientSecret,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: config.twitch.redirectUri,
-      }),
+    return loggedApiCall(log, 'exchangeCode', {}, async () => {
+      const response = await fetch(`${TWITCH_AUTH_BASE}/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: config.twitch.clientId,
+          client_secret: config.twitch.clientSecret,
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: config.twitch.redirectUri,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Token exchange failed: ${error}`);
+      }
+
+      const tokens = await response.json() as TwitchTokenResponse;
+      log.info({ scopes: tokens.scope, expiresIn: tokens.expires_in }, 'Token exchange successful');
+      return tokens;
     });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Token exchange failed: ${error}`);
-    }
-
-    return response.json() as Promise<TwitchTokenResponse>;
   }
 
   async refreshToken(refreshToken: string): Promise<TwitchTokenResponse> {
-    const response = await fetch(`${TWITCH_AUTH_BASE}/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: config.twitch.clientId,
-        client_secret: config.twitch.clientSecret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
+    return loggedApiCall(log, 'refreshToken', {}, async () => {
+      const response = await fetch(`${TWITCH_AUTH_BASE}/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: config.twitch.clientId,
+          client_secret: config.twitch.clientSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Token refresh failed: ${error}`);
+      }
+
+      const tokens = await response.json() as TwitchTokenResponse;
+      log.info({ expiresIn: tokens.expires_in }, 'Token refresh successful');
+      return tokens;
     });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Token refresh failed: ${error}`);
-    }
-
-    return response.json() as Promise<TwitchTokenResponse>;
   }
 
   async getUser(accessToken: string): Promise<TwitchUser> {
-    const data = await this.fetch<{ data: TwitchUser[] }>('/users', accessToken);
-    if (!data.data?.[0]) {
-      throw new Error('No user data returned');
-    }
-    return data.data[0];
+    return loggedApiCall(log, 'getUser', {}, async () => {
+      const data = await this.fetch<{ data: TwitchUser[] }>('/users', accessToken);
+      if (!data.data?.[0]) {
+        throw new Error('No user data returned');
+      }
+      const user = data.data[0];
+      log.info({ userId: user.id, login: user.login }, 'Fetched user profile');
+      return user;
+    });
   }
 
   async getUserByLogin(accessToken: string, login: string): Promise<TwitchUser | null> {
-    const data = await this.fetch<{ data: TwitchUser[] }>(`/users?login=${encodeURIComponent(login)}`, accessToken);
-    return data.data?.[0] || null;
+    return loggedApiCall(log, 'getUserByLogin', { login }, async () => {
+      const data = await this.fetch<{ data: TwitchUser[] }>(`/users?login=${encodeURIComponent(login)}`, accessToken);
+      const user = data.data?.[0] || null;
+      log.debug({ login, found: !!user }, 'User lookup by login');
+      return user;
+    });
   }
 
   async getStreams(accessToken: string, userIds: string[]): Promise<TwitchStream[]> {
-    if (userIds.length === 0) return [];
-
-    // API allows max 100 user_ids per request
-    const chunks: string[][] = [];
-    for (let i = 0; i < userIds.length; i += 100) {
-      chunks.push(userIds.slice(i, i + 100));
+    if (userIds.length === 0) {
+      log.debug('getStreams called with empty userIds');
+      return [];
     }
 
-    const streams: TwitchStream[] = [];
-    for (const chunk of chunks) {
-      const params = new URLSearchParams();
-      chunk.forEach((id) => params.append('user_id', id));
+    return loggedApiCall(log, 'getStreams', { userCount: userIds.length }, async () => {
+      // API allows max 100 user_ids per request
+      const chunks: string[][] = [];
+      for (let i = 0; i < userIds.length; i += 100) {
+        chunks.push(userIds.slice(i, i + 100));
+      }
 
-      const data = await this.fetch<{ data: TwitchStream[] }>(
-        `/streams?${params}`,
-        accessToken
-      );
-      streams.push(...data.data);
-    }
+      const streams: TwitchStream[] = [];
+      for (const chunk of chunks) {
+        const params = new URLSearchParams();
+        chunk.forEach((id) => params.append('user_id', id));
 
-    return streams;
+        const data = await this.fetch<{ data: TwitchStream[] }>(
+          `/streams?${params}`,
+          accessToken
+        );
+        streams.push(...data.data);
+      }
+
+      log.info({ requested: userIds.length, live: streams.length }, 'Fetched stream statuses');
+      return streams;
+    });
   }
 
   async getStreamsByCategory(
@@ -164,17 +199,20 @@ export class TwitchApiService {
     gameId: string,
     first: number = 50
   ): Promise<TwitchStream[]> {
-    const params = new URLSearchParams({
-      game_id: gameId,
-      first: first.toString(),
+    return loggedApiCall(log, 'getStreamsByCategory', { gameId, limit: first }, async () => {
+      const params = new URLSearchParams({
+        game_id: gameId,
+        first: first.toString(),
+      });
+
+      const data = await this.fetch<{ data: TwitchStream[] }>(
+        `/streams?${params}`,
+        accessToken
+      );
+
+      log.info({ gameId, streamCount: data.data.length }, 'Fetched category streams');
+      return data.data;
     });
-
-    const data = await this.fetch<{ data: TwitchStream[] }>(
-      `/streams?${params}`,
-      accessToken
-    );
-
-    return data.data;
   }
 
   async searchChannels(
@@ -183,18 +221,21 @@ export class TwitchApiService {
     liveOnly: boolean = true,
     first: number = 20
   ): Promise<TwitchChannel[]> {
-    const params = new URLSearchParams({
-      query,
-      live_only: liveOnly.toString(),
-      first: first.toString(),
+    return loggedApiCall(log, 'searchChannels', { query, liveOnly, limit: first }, async () => {
+      const params = new URLSearchParams({
+        query,
+        live_only: liveOnly.toString(),
+        first: first.toString(),
+      });
+
+      const data = await this.fetch<{ data: TwitchChannel[] }>(
+        `/search/channels?${params}`,
+        accessToken
+      );
+
+      log.info({ query, results: data.data.length }, 'Channel search completed');
+      return data.data;
     });
-
-    const data = await this.fetch<{ data: TwitchChannel[] }>(
-      `/search/channels?${params}`,
-      accessToken
-    );
-
-    return data.data;
   }
 
   async startRaid(
@@ -202,31 +243,44 @@ export class TwitchApiService {
     fromBroadcasterId: string,
     toBroadcasterId: string
   ): Promise<{ created_at: string; is_mature: boolean }> {
-    const params = new URLSearchParams({
-      from_broadcaster_id: fromBroadcasterId,
-      to_broadcaster_id: toBroadcasterId,
+    return loggedApiCall(log, 'startRaid', { fromBroadcasterId, toBroadcasterId }, async () => {
+      const params = new URLSearchParams({
+        from_broadcaster_id: fromBroadcasterId,
+        to_broadcaster_id: toBroadcasterId,
+      });
+
+      const data = await this.fetch<{ data: Array<{ created_at: string; is_mature: boolean }> }>(
+        `/raids?${params}`,
+        accessToken,
+        { method: 'POST' }
+      );
+
+      log.info({ fromBroadcasterId, toBroadcasterId, isMature: data.data[0].is_mature }, 'Raid started');
+      return data.data[0];
     });
-
-    const data = await this.fetch<{ data: Array<{ created_at: string; is_mature: boolean }> }>(
-      `/raids?${params}`,
-      accessToken,
-      { method: 'POST' }
-    );
-
-    return data.data[0];
   }
 
   async cancelRaid(accessToken: string, broadcasterId: string): Promise<void> {
-    const params = new URLSearchParams({
-      broadcaster_id: broadcasterId,
-    });
+    return loggedApiCall(log, 'cancelRaid', { broadcasterId }, async () => {
+      const params = new URLSearchParams({
+        broadcaster_id: broadcasterId,
+      });
 
-    await fetch(`${TWITCH_API_BASE}/raids?${params}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Client-Id': config.twitch.clientId,
-      },
+      const response = await fetch(`${TWITCH_API_BASE}/raids?${params}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Client-Id': config.twitch.clientId,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        log.error({ broadcasterId, status: response.status, error }, 'Failed to cancel raid');
+        throw new Error(`Cancel raid failed: ${error}`);
+      }
+
+      log.info({ broadcasterId }, 'Raid cancelled');
     });
   }
 
@@ -236,18 +290,22 @@ export class TwitchApiService {
     senderId: string,
     message: string
   ): Promise<void> {
-    await this.fetch(
-      '/chat/messages',
-      accessToken,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          broadcaster_id: broadcasterId,
-          sender_id: senderId,
-          message,
-        }),
-      }
-    );
+    return loggedApiCall(log, 'sendChatMessage', { broadcasterId, senderId, messageLength: message.length }, async () => {
+      await this.fetch(
+        '/chat/messages',
+        accessToken,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            broadcaster_id: broadcasterId,
+            sender_id: senderId,
+            message,
+          }),
+        }
+      );
+
+      log.info({ broadcasterId, senderId }, 'Chat message sent');
+    });
   }
 }
 

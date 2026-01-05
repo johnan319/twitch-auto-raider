@@ -3,6 +3,9 @@ import { z } from 'zod';
 import { prisma, RaidStatus } from 'database';
 import { getAccessToken } from './auth.js';
 import { twitchApi } from '../services/twitch-api.js';
+import { loggers } from '../lib/logger.js';
+
+const log = loggers.raid;
 
 const startRaidSchema = z.object({
   toBroadcasterId: z.string(),
@@ -28,6 +31,7 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
 
     const parseResult = startRaidSchema.safeParse(request.body);
     if (!parseResult.success) {
+      log.warn({ userId: request.session.userId, errors: parseResult.error.errors }, 'Invalid start raid request');
       return reply.status(400).send({ error: 'Invalid request body', details: parseResult.error });
     }
 
@@ -41,6 +45,15 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
     if (!user) {
       return reply.status(401).send({ error: 'User not found' });
     }
+
+    log.info({
+      userId: user.id,
+      fromBroadcasterId: user.twitchUserId,
+      toBroadcasterId: body.toBroadcasterId,
+      toBroadcasterName: body.toBroadcasterName,
+      category: body.categoryName,
+      sendMessages: body.sendMessages,
+    }, 'Starting raid');
 
     try {
       const accessToken = await getAccessToken(user.id);
@@ -61,6 +74,8 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
           status: RaidStatus.QUEUED,
         },
       });
+
+      log.debug({ userId: user.id, raidHistoryId: raidHistory.id }, 'Raid history record created');
 
       // Send chat messages if enabled
       if (body.sendMessages && user.settings) {
@@ -87,11 +102,19 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
             user.twitchUserId,
             raidRunMessage
           );
+
+          log.debug({ userId: user.id }, 'Chat messages sent');
         } catch (chatError) {
-          console.error('Chat message error:', chatError);
+          log.warn({ userId: user.id, error: chatError instanceof Error ? chatError.message : String(chatError) }, 'Chat message failed (non-fatal)');
           // Don't fail the raid if chat messages fail
         }
       }
+
+      log.info({
+        userId: user.id,
+        raidHistoryId: raidHistory.id,
+        toBroadcasterName: body.toBroadcasterName,
+      }, 'Raid started successfully');
 
       return {
         success: true,
@@ -99,7 +122,11 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
         message: 'Raid started! The raid will execute after the 90-second countdown or when you click "Raid Now" in Twitch.',
       };
     } catch (error) {
-      console.error('Start raid error:', error);
+      log.error({
+        userId: user.id,
+        toBroadcasterId: body.toBroadcasterId,
+        error: error instanceof Error ? error.message : String(error),
+      }, 'Failed to start raid');
 
       // Create failed raid history record
       await prisma.raidHistory.create({
@@ -133,6 +160,8 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
       return reply.status(401).send({ error: 'User not found' });
     }
 
+    log.info({ userId: user.id, twitchUserId: user.twitchUserId }, 'Canceling raid');
+
     try {
       const accessToken = await getAccessToken(user.id);
 
@@ -140,7 +169,7 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
       await twitchApi.cancelRaid(accessToken, user.twitchUserId);
 
       // Update queued raid history records to canceled
-      await prisma.raidHistory.updateMany({
+      const updateResult = await prisma.raidHistory.updateMany({
         where: {
           userId: user.id,
           status: RaidStatus.QUEUED,
@@ -150,9 +179,11 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
         },
       });
 
+      log.info({ userId: user.id, canceledCount: updateResult.count }, 'Raid canceled');
+
       return { success: true, message: 'Raid canceled' };
     } catch (error) {
-      console.error('Cancel raid error:', error);
+      log.error({ userId: user.id, error: error instanceof Error ? error.message : String(error) }, 'Failed to cancel raid');
       return reply.status(500).send({ error: 'Failed to cancel raid' });
     }
   });
@@ -178,6 +209,7 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
     });
 
     if (!raidHistory) {
+      log.warn({ userId: request.session.userId, raidHistoryId }, 'Raid history not found for rating');
       return reply.status(404).send({ error: 'Raid history not found' });
     }
 
@@ -188,6 +220,8 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
         notes,
       },
     });
+
+    log.info({ userId: request.session.userId, raidHistoryId, rating }, 'Raid rated');
 
     return { success: true };
   });
@@ -214,6 +248,8 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
         where: { userId: request.session.userId },
       }),
     ]);
+
+    log.debug({ userId: request.session.userId, count: raids.length, total, limit, offset }, 'Raid history fetched');
 
     return { raids, total, limit, offset };
   });

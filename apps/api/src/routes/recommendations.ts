@@ -2,6 +2,9 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { getAccessToken } from './auth.js';
 import { recommendationsService } from '../services/recommendations.js';
+import { loggers } from '../lib/logger.js';
+
+const log = loggers.recommendations;
 
 export async function recommendationsRoutes(fastify: FastifyInstance): Promise<void> {
   // Get raid recommendations
@@ -18,6 +21,8 @@ export async function recommendationsRoutes(fastify: FastifyInstance): Promise<v
       return reply.status(401).send({ error: 'User not found' });
     }
 
+    log.info({ userId: user.id, twitchUserId: user.twitchUserId }, 'Fetching recommendations');
+
     try {
       const accessToken = await getAccessToken(user.id);
       const recommendations = await recommendationsService.getRecommendations(
@@ -26,9 +31,11 @@ export async function recommendationsRoutes(fastify: FastifyInstance): Promise<v
         user.twitchUserId
       );
 
+      log.info({ userId: user.id, count: recommendations.length }, 'Recommendations returned');
+
       return { recommendations };
     } catch (error) {
-      console.error('Recommendations error:', error);
+      log.error({ userId: user.id, error: error instanceof Error ? error.message : String(error) }, 'Failed to get recommendations');
       return reply.status(500).send({ error: 'Failed to get recommendations' });
     }
   });

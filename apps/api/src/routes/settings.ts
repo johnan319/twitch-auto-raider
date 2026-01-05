@@ -1,6 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { loggers } from '../lib/logger.js';
+
+const log = loggers.settings;
 
 const updateSettingsSchema = z.object({
   // Language & Content filters
@@ -48,9 +51,11 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
     });
 
     if (!settings) {
+      log.warn({ userId: request.session.userId }, 'Settings not found');
       return reply.status(404).send({ error: 'Settings not found' });
     }
 
+    log.debug({ userId: request.session.userId }, 'Settings fetched');
     return { settings };
   });
 
@@ -62,6 +67,7 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
 
     const parseResult = updateSettingsSchema.safeParse(request.body);
     if (!parseResult.success) {
+      log.warn({ userId: request.session.userId, errors: parseResult.error.errors }, 'Invalid settings update');
       return reply.status(400).send({ error: 'Invalid request body', details: parseResult.error });
     }
 
@@ -69,6 +75,8 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       where: { userId: request.session.userId },
       data: parseResult.data,
     });
+
+    log.info({ userId: request.session.userId, updatedFields: Object.keys(parseResult.data) }, 'Settings updated');
 
     return { settings };
   });
@@ -83,6 +91,7 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       where: { userId: request.session.userId },
     });
 
+    log.debug({ userId: request.session.userId, count: excludes.length }, 'Excludes fetched');
     return { excludes };
   });
 
@@ -114,6 +123,8 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       },
     });
 
+    log.info({ userId: request.session.userId, excludedBroadcasterId, reason }, 'Broadcaster excluded');
+
     return { exclude };
   });
 
@@ -140,6 +151,8 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       where: { id: request.params.id },
     });
 
+    log.info({ userId: request.session.userId, excludeId: request.params.id, excludedBroadcasterId: exclude.excludedBroadcasterId }, 'Exclude removed');
+
     return { success: true };
   });
 
@@ -155,6 +168,7 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       where: { userId: request.session.userId },
     });
 
+    log.debug({ userId: request.session.userId, count: blocklist.length }, 'Category blocklist fetched');
     return { blocklist };
   });
 
@@ -186,6 +200,8 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       },
     });
 
+    log.info({ userId: request.session.userId, categoryId, categoryName }, 'Category blocked');
+
     return { entry };
   });
 
@@ -211,6 +227,8 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
     await prisma.categoryBlocklist.delete({
       where: { id: request.params.id },
     });
+
+    log.info({ userId: request.session.userId, categoryId: entry.categoryId, categoryName: entry.categoryName }, 'Category unblocked');
 
     return { success: true };
   });

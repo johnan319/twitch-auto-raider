@@ -5,6 +5,9 @@ import { encrypt, decrypt } from '../lib/encryption.js';
 import { twitchApi } from '../services/twitch-api.js';
 import { eventSubService } from '../services/eventsub.js';
 import { config } from '../lib/config.js';
+import { loggers } from '../lib/logger.js';
+
+const log = loggers.auth;
 
 declare module '@fastify/session' {
   interface FastifySessionObject {
@@ -29,6 +32,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     const state = randomBytes(16).toString('hex');
     request.session.oauthState = state;
 
+    log.info({ ip: request.ip }, 'OAuth flow started');
+
     const authUrl = twitchApi.getAuthorizationUrl(state);
     return reply.redirect(authUrl);
   });
@@ -40,14 +45,17 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     const { code, state, error } = request.query;
 
     if (error) {
+      log.warn({ error, ip: request.ip }, 'OAuth callback received error from Twitch');
       return reply.redirect(`${config.cors.origin}/?error=${encodeURIComponent(error)}`);
     }
 
     if (!code || !state) {
+      log.warn({ hasCode: !!code, hasState: !!state, ip: request.ip }, 'OAuth callback missing parameters');
       return reply.redirect(`${config.cors.origin}/?error=missing_params`);
     }
 
     if (state !== request.session.oauthState) {
+      log.warn({ ip: request.ip }, 'OAuth callback state mismatch');
       return reply.redirect(`${config.cors.origin}/?error=invalid_state`);
     }
 
@@ -59,6 +67,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
       // Get user profile
       const twitchUser = await twitchApi.getUser(tokens.access_token);
+
+      log.info({ twitchUserId: twitchUser.id, login: twitchUser.login }, 'User authenticated via Twitch');
 
       // Upsert user
       const user = await prisma.user.upsert({
@@ -75,6 +85,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
           profileImageUrl: twitchUser.profile_image_url,
         },
       });
+
+      log.debug({ userId: user.id, twitchUserId: twitchUser.id }, 'User record upserted');
 
       // Create default settings if not exists
       await prisma.settings.upsert({
@@ -103,28 +115,35 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
         },
       });
 
+      log.debug({ userId: user.id, expiresAt }, 'OAuth tokens stored');
+
       // Subscribe to EventSub for this user
       await eventSubService.subscribeToRaids(twitchUser.id, tokens.access_token);
 
       // Set session
       request.session.userId = user.id;
 
+      log.info({ userId: user.id, twitchUserId: twitchUser.id, login: twitchUser.login }, 'Login successful');
+
       return reply.redirect(`${config.cors.origin}/end`);
     } catch (err) {
-      console.error('OAuth callback error:', err);
+      log.error({ error: err instanceof Error ? err.message : String(err), ip: request.ip }, 'OAuth callback error');
       return reply.redirect(`${config.cors.origin}/?error=auth_failed`);
     }
   });
 
   // Logout
   fastify.post('/auth/logout', async (request, _reply) => {
+    const userId = request.session.userId;
     request.session.destroy();
+    log.info({ userId }, 'User logged out');
     return { success: true };
   });
 
   // Get current user
   fastify.get('/api/me', async (request, reply) => {
     if (!request.session.userId) {
+      log.debug({ ip: request.ip }, 'Unauthenticated /api/me request');
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
@@ -140,10 +159,12 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     });
 
     if (!user) {
+      log.warn({ userId: request.session.userId }, 'Session references non-existent user');
       request.session.destroy();
       return reply.status(401).send({ error: 'User not found' });
     }
 
+    log.debug({ userId: user.id }, 'User profile fetched');
     return user;
   });
 }
@@ -155,12 +176,15 @@ export async function getAccessToken(userId: string): Promise<string> {
   });
 
   if (!tokenRecord) {
+    log.error({ userId }, 'No tokens found for user');
     throw new Error('No tokens found');
   }
 
   // Check if token expires within 5 minutes
   const expiresIn = tokenRecord.expiresAt.getTime() - Date.now();
   if (expiresIn < 5 * 60 * 1000) {
+    log.info({ userId, expiresIn }, 'Token expiring soon, refreshing');
+
     // Refresh token
     const refreshToken = decrypt(tokenRecord.refreshToken);
     const newTokens = await twitchApi.refreshToken(refreshToken);
@@ -177,6 +201,7 @@ export async function getAccessToken(userId: string): Promise<string> {
       },
     });
 
+    log.info({ userId, newExpiresAt }, 'Token refreshed successfully');
     return newTokens.access_token;
   }
 

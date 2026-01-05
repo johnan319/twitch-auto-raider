@@ -11,6 +11,7 @@ import { raidRoutes } from './routes/raid.js';
 import { warmlistRoutes } from './routes/warmlist.js';
 import { settingsRoutes } from './routes/settings.js';
 import { eventSubService } from './services/eventsub.js';
+import { logger } from './lib/logger.js';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -33,11 +34,15 @@ const fastify = Fastify({
 });
 
 async function main() {
+  logger.info({ env: process.env.NODE_ENV, port: config.port }, 'Starting API server');
+
   // Register plugins
   await fastify.register(cors, {
     origin: config.cors.origin,
     credentials: true,
   });
+
+  logger.debug({ origin: config.cors.origin }, 'CORS configured');
 
   // Rate limiting - global default
   await fastify.register(rateLimit, {
@@ -64,6 +69,38 @@ async function main() {
     saveUninitialized: false,
   });
 
+  // Request logging hook
+  fastify.addHook('onRequest', async (request) => {
+    // Skip logging for health checks and static files
+    if (request.url === '/health') return;
+
+    logger.debug({
+      method: request.method,
+      url: request.url,
+      ip: request.ip,
+    }, 'Incoming request');
+  });
+
+  // Response logging hook
+  fastify.addHook('onResponse', async (request, reply) => {
+    // Skip logging for health checks
+    if (request.url === '/health') return;
+
+    const duration = reply.elapsedTime;
+    const logData = {
+      method: request.method,
+      url: request.url,
+      statusCode: reply.statusCode,
+      duration: Math.round(duration),
+    };
+
+    if (reply.statusCode >= 400) {
+      logger.warn(logData, 'Request completed with error');
+    } else {
+      logger.debug(logData, 'Request completed');
+    }
+  });
+
   // Register routes
   await fastify.register(authRoutes);
   await fastify.register(statusRoutes);
@@ -72,6 +109,8 @@ async function main() {
   await fastify.register(warmlistRoutes);
   await fastify.register(settingsRoutes);
 
+  logger.debug('All routes registered');
+
   // Health check
   fastify.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
@@ -79,15 +118,15 @@ async function main() {
 
   // Connect to EventSub
   eventSubService.connect().catch((error) => {
-    fastify.log.error({ err: error }, 'Failed to connect to EventSub');
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to connect to EventSub');
   });
 
   // Start server
   try {
     await fastify.listen({ port: config.port, host: '0.0.0.0' });
-    fastify.log.info(`Server running on http://localhost:${config.port}`);
+    logger.info({ port: config.port, env: process.env.NODE_ENV }, 'Server started successfully');
   } catch (err) {
-    fastify.log.error(err);
+    logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Failed to start server');
     process.exit(1);
   }
 }
