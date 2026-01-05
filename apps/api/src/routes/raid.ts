@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma, RaidStatus } from 'database';
 import { getAccessToken } from './auth.js';
+import { getAuthUserId } from '../lib/auth.js';
 import { twitchApi } from '../services/twitch-api.js';
 import { loggers } from '../lib/logger.js';
 
@@ -25,20 +26,21 @@ const rateRaidSchema = z.object({
 export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
   // Start a raid
   fastify.post('/api/raid/start', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const parseResult = startRaidSchema.safeParse(request.body);
     if (!parseResult.success) {
-      log.warn({ userId: request.session.userId, errors: parseResult.error.errors }, 'Invalid start raid request');
+      log.warn({ userId, errors: parseResult.error.errors }, 'Invalid start raid request');
       return reply.status(400).send({ error: 'Invalid request body', details: parseResult.error });
     }
 
     const body = parseResult.data;
 
     const user = await prisma.user.findUnique({
-      where: { id: request.session.userId },
+      where: { id: userId },
       include: { settings: true },
     });
 
@@ -56,7 +58,7 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
     }, 'Starting raid');
 
     try {
-      const accessToken = await getAccessToken(user.id);
+      const accessToken = await getAccessToken(userId);
 
       // Start the raid via Twitch API
       await twitchApi.startRaid(accessToken, user.twitchUserId, body.toBroadcasterId);
@@ -148,12 +150,13 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Cancel a raid
   fastify.post('/api/raid/cancel', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: request.session.userId },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -163,7 +166,7 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
     log.info({ userId: user.id, twitchUserId: user.twitchUserId }, 'Canceling raid');
 
     try {
-      const accessToken = await getAccessToken(user.id);
+      const accessToken = await getAccessToken(userId);
 
       // Cancel the raid via Twitch API
       await twitchApi.cancelRaid(accessToken, user.twitchUserId);
@@ -190,7 +193,8 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Rate a raid
   fastify.post('/api/raid/rate', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
@@ -204,12 +208,12 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
     const raidHistory = await prisma.raidHistory.findFirst({
       where: {
         id: raidHistoryId,
-        userId: request.session.userId,
+        userId,
       },
     });
 
     if (!raidHistory) {
-      log.warn({ userId: request.session.userId, raidHistoryId }, 'Raid history not found for rating');
+      log.warn({ userId, raidHistoryId }, 'Raid history not found for rating');
       return reply.status(404).send({ error: 'Raid history not found' });
     }
 
@@ -221,7 +225,7 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
       },
     });
 
-    log.info({ userId: request.session.userId, raidHistoryId, rating }, 'Raid rated');
+    log.info({ userId, raidHistoryId, rating }, 'Raid rated');
 
     return { success: true };
   });
@@ -230,7 +234,8 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get<{
     Querystring: { limit?: string; offset?: string };
   }>('/api/history', async (request, reply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
@@ -239,17 +244,17 @@ export async function raidRoutes(fastify: FastifyInstance): Promise<void> {
 
     const [raids, total] = await Promise.all([
       prisma.raidHistory.findMany({
-        where: { userId: request.session.userId },
+        where: { userId },
         orderBy: { startedAt: 'desc' },
         take: limit,
         skip: offset,
       }),
       prisma.raidHistory.count({
-        where: { userId: request.session.userId },
+        where: { userId },
       }),
     ]);
 
-    log.debug({ userId: request.session.userId, count: raids.length, total, limit, offset }, 'Raid history fetched');
+    log.debug({ userId, count: raids.length, total, limit, offset }, 'Raid history fetched');
 
     return { raids, total, limit, offset };
   });

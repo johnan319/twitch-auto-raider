@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { getAuthUserId } from '../lib/auth.js';
 import { loggers } from '../lib/logger.js';
 
 const log = loggers.settings;
@@ -42,62 +43,66 @@ const addCategoryBlockSchema = z.object({
 export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   // Get settings
   fastify.get('/api/settings', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const settings = await prisma.settings.findUnique({
-      where: { userId: request.session.userId },
+      where: { userId },
     });
 
     if (!settings) {
-      log.warn({ userId: request.session.userId }, 'Settings not found');
+      log.warn({ userId }, 'Settings not found');
       return reply.status(404).send({ error: 'Settings not found' });
     }
 
-    log.debug({ userId: request.session.userId }, 'Settings fetched');
+    log.debug({ userId }, 'Settings fetched');
     return { settings };
   });
 
   // Update settings
   fastify.put('/api/settings', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const parseResult = updateSettingsSchema.safeParse(request.body);
     if (!parseResult.success) {
-      log.warn({ userId: request.session.userId, errors: parseResult.error.errors }, 'Invalid settings update');
+      log.warn({ userId, errors: parseResult.error.errors }, 'Invalid settings update');
       return reply.status(400).send({ error: 'Invalid request body', details: parseResult.error });
     }
 
     const settings = await prisma.settings.update({
-      where: { userId: request.session.userId },
+      where: { userId },
       data: parseResult.data,
     });
 
-    log.info({ userId: request.session.userId, updatedFields: Object.keys(parseResult.data) }, 'Settings updated');
+    log.info({ userId, updatedFields: Object.keys(parseResult.data) }, 'Settings updated');
 
     return { settings };
   });
 
   // Get excludes
   fastify.get('/api/excludes', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const excludes = await prisma.raidExclude.findMany({
-      where: { userId: request.session.userId },
+      where: { userId },
     });
 
-    log.debug({ userId: request.session.userId, count: excludes.length }, 'Excludes fetched');
+    log.debug({ userId, count: excludes.length }, 'Excludes fetched');
     return { excludes };
   });
 
   // Add exclude
   fastify.post('/api/excludes', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
@@ -111,19 +116,19 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
     const exclude = await prisma.raidExclude.upsert({
       where: {
         userId_excludedBroadcasterId: {
-          userId: request.session.userId,
+          userId,
           excludedBroadcasterId,
         },
       },
       update: { reason },
       create: {
-        userId: request.session.userId,
+        userId,
         excludedBroadcasterId,
         reason,
       },
     });
 
-    log.info({ userId: request.session.userId, excludedBroadcasterId, reason }, 'Broadcaster excluded');
+    log.info({ userId, excludedBroadcasterId, reason }, 'Broadcaster excluded');
 
     return { exclude };
   });
@@ -132,14 +137,15 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.delete<{
     Params: { id: string };
   }>('/api/excludes/:id', async (request, reply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const exclude = await prisma.raidExclude.findFirst({
       where: {
         id: request.params.id,
-        userId: request.session.userId,
+        userId,
       },
     });
 
@@ -151,7 +157,7 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       where: { id: request.params.id },
     });
 
-    log.info({ userId: request.session.userId, excludeId: request.params.id, excludedBroadcasterId: exclude.excludedBroadcasterId }, 'Exclude removed');
+    log.info({ userId, excludeId: request.params.id, excludedBroadcasterId: exclude.excludedBroadcasterId }, 'Exclude removed');
 
     return { success: true };
   });
@@ -160,21 +166,23 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Get blocked categories
   fastify.get('/api/category-blocklist', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const blocklist = await prisma.categoryBlocklist.findMany({
-      where: { userId: request.session.userId },
+      where: { userId },
     });
 
-    log.debug({ userId: request.session.userId, count: blocklist.length }, 'Category blocklist fetched');
+    log.debug({ userId, count: blocklist.length }, 'Category blocklist fetched');
     return { blocklist };
   });
 
   // Add category to blocklist
   fastify.post('/api/category-blocklist', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
@@ -188,19 +196,19 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
     const entry = await prisma.categoryBlocklist.upsert({
       where: {
         userId_categoryId: {
-          userId: request.session.userId,
+          userId,
           categoryId,
         },
       },
       update: { categoryName },
       create: {
-        userId: request.session.userId,
+        userId,
         categoryId,
         categoryName,
       },
     });
 
-    log.info({ userId: request.session.userId, categoryId, categoryName }, 'Category blocked');
+    log.info({ userId, categoryId, categoryName }, 'Category blocked');
 
     return { entry };
   });
@@ -209,14 +217,15 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.delete<{
     Params: { id: string };
   }>('/api/category-blocklist/:id', async (request, reply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const entry = await prisma.categoryBlocklist.findFirst({
       where: {
         id: request.params.id,
-        userId: request.session.userId,
+        userId,
       },
     });
 
@@ -228,7 +237,7 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
       where: { id: request.params.id },
     });
 
-    log.info({ userId: request.session.userId, categoryId: entry.categoryId, categoryName: entry.categoryName }, 'Category unblocked');
+    log.info({ userId, categoryId: entry.categoryId, categoryName: entry.categoryName }, 'Category unblocked');
 
     return { success: true };
   });

@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { getAccessToken } from './auth.js';
+import { getAuthUserId } from '../lib/auth.js';
 import { recommendationsService } from '../services/recommendations.js';
 import { loggers } from '../lib/logger.js';
 
@@ -9,12 +10,13 @@ const log = loggers.status;
 export async function statusRoutes(fastify: FastifyInstance): Promise<void> {
   // Get current stream status
   fastify.get('/api/status', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: request.session.userId },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -22,7 +24,7 @@ export async function statusRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     try {
-      const accessToken = await getAccessToken(user.id);
+      const accessToken = await getAccessToken(userId);
       const status = await recommendationsService.getUserStreamStatus(
         accessToken,
         user.twitchUserId

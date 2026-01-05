@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { getAccessToken } from './auth.js';
+import { getAuthUserId } from '../lib/auth.js';
 import { twitchApi } from '../services/twitch-api.js';
 import { loggers } from '../lib/logger.js';
 
@@ -21,23 +22,25 @@ const updateWarmListSchema = z.object({
 export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
   // Get warm list
   fastify.get('/api/warmlist', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const entries = await prisma.warmListEntry.findMany({
-      where: { userId: request.session.userId },
+      where: { userId },
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
     });
 
-    log.debug({ userId: request.session.userId, count: entries.length }, 'Warm list fetched');
+    log.debug({ userId, count: entries.length }, 'Warm list fetched');
 
     return { entries };
   });
 
   // Add to warm list
   fastify.post('/api/warmlist', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
@@ -48,16 +51,16 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
 
     const { broadcasterLogin, notes, priority } = parseResult.data;
 
-    log.info({ userId: request.session.userId, broadcasterLogin, priority }, 'Adding to warm list');
+    log.info({ userId, broadcasterLogin, priority }, 'Adding to warm list');
 
     try {
-      const accessToken = await getAccessToken(request.session.userId);
+      const accessToken = await getAccessToken(userId);
 
       // Fetch user profile to get ID, name, and profile image
       const user = await twitchApi.getUserByLogin(accessToken, broadcasterLogin);
 
       if (!user) {
-        log.warn({ userId: request.session.userId, broadcasterLogin }, 'Channel not found on Twitch');
+        log.warn({ userId, broadcasterLogin }, 'Channel not found on Twitch');
         return reply.status(404).send({ error: 'Channel not found' });
       }
 
@@ -65,7 +68,7 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
       const entry = await prisma.warmListEntry.upsert({
         where: {
           userId_broadcasterId: {
-            userId: request.session.userId,
+            userId,
             broadcasterId: user.id,
           },
         },
@@ -75,7 +78,7 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
           profileImageUrl: user.profile_image_url,
         },
         create: {
-          userId: request.session.userId,
+          userId,
           broadcasterId: user.id,
           broadcasterLogin: user.login,
           broadcasterName: user.display_name,
@@ -86,7 +89,7 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
       });
 
       log.info({
-        userId: request.session.userId,
+        userId,
         broadcasterId: user.id,
         broadcasterLogin: user.login,
         priority,
@@ -94,7 +97,7 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
 
       return { entry };
     } catch (error) {
-      log.error({ userId: request.session.userId, broadcasterLogin, error: error instanceof Error ? error.message : String(error) }, 'Failed to add to warm list');
+      log.error({ userId, broadcasterLogin, error: error instanceof Error ? error.message : String(error) }, 'Failed to add to warm list');
       return reply.status(500).send({ error: 'Failed to add to warm list' });
     }
   });
@@ -103,7 +106,8 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.put<{
     Params: { id: string };
   }>('/api/warmlist/:id', async (request, reply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
@@ -115,7 +119,7 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
     const entry = await prisma.warmListEntry.findFirst({
       where: {
         id: request.params.id,
-        userId: request.session.userId,
+        userId,
       },
     });
 
@@ -129,7 +133,7 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
     });
 
     log.info({
-      userId: request.session.userId,
+      userId,
       entryId: request.params.id,
       updatedFields: Object.keys(parseResult.data),
     }, 'Warm list entry updated');
@@ -141,14 +145,15 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.delete<{
     Params: { id: string };
   }>('/api/warmlist/:id', async (request, reply) => {
-    if (!request.session.userId) {
+    const userId = await getAuthUserId(request);
+    if (!userId) {
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
     const entry = await prisma.warmListEntry.findFirst({
       where: {
         id: request.params.id,
-        userId: request.session.userId,
+        userId,
       },
     });
 
@@ -161,7 +166,7 @@ export async function warmlistRoutes(fastify: FastifyInstance): Promise<void> {
     });
 
     log.info({
-      userId: request.session.userId,
+      userId,
       entryId: request.params.id,
       broadcasterLogin: entry.broadcasterLogin,
     }, 'Removed from warm list');
