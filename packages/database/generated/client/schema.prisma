@@ -36,69 +36,69 @@ model OAuthToken {
 }
 
 model Settings {
-  id                String  @id @default(uuid())
-  userId            String  @unique
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Language & Content filters
-  allowedLanguages  String[] @default(["en"])
+  allowedLanguages    String[]     @default(["en"])
   matureContentFilter MatureFilter @default(EXCLUDE)
 
   // Broadcaster type filter
   broadcasterTypeFilter BroadcasterTypeFilter @default(ALL)
 
   // Viewer count settings
-  minTargetViewers  Int     @default(5)
-  maxTargetViewers  Int     @default(500)
+  minTargetViewers      Int              @default(5)
+  maxTargetViewers      Int              @default(500)
   viewerCountPreference ViewerPreference @default(SIMILAR)
 
   // Category settings
-  sameCategoryOnly  Boolean @default(true)
+  sameCategoryOnly Boolean @default(true)
 
   // Stream duration preference
   streamDurationPreference DurationPreference @default(ANY)
 
   // Chat messages
-  raidMessage       String  @default("We're raiding @{target} - show them some love!")
-  raidRunMessage    String  @default("Raid and run! See you next stream!")
+  raidMessage    String @default("We're raiding @{target} - show them some love!")
+  raidRunMessage String @default("Raid and run! See you next stream!")
 }
 
 enum MatureFilter {
-  INCLUDE    // Show all streams
-  EXCLUDE    // Hide mature streams
-  ONLY       // Only show mature streams
+  INCLUDE // Show all streams
+  EXCLUDE // Hide mature streams
+  ONLY // Only show mature streams
 }
 
 enum BroadcasterTypeFilter {
-  ALL        // Show everyone
-  AFFILIATE  // Affiliates and Partners only
-  PARTNER    // Partners only
+  ALL // Show everyone
+  AFFILIATE // Affiliates and Partners only
+  PARTNER // Partners only
 }
 
 enum ViewerPreference {
-  SMALLER    // Prefer smaller streamers
-  SIMILAR    // Prefer similar size
-  LARGER     // Prefer larger streamers
-  ANY        // No preference
+  SMALLER // Prefer smaller streamers
+  SIMILAR // Prefer similar size
+  LARGER // Prefer larger streamers
+  ANY // No preference
 }
 
 enum DurationPreference {
-  NEW        // Prefer streams that just started (< 1 hour)
+  NEW // Prefer streams that just started (< 1 hour)
   ESTABLISHED // Prefer streams going for a while (> 2 hours)
-  ANY        // No preference
+  ANY // No preference
 }
 
 model WarmListEntry {
-  id                 String   @id @default(uuid())
-  userId             String
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  broadcasterId      String
-  broadcasterLogin   String
-  broadcasterName    String
-  profileImageUrl    String?
-  notes              String?
-  priority           Int      @default(0)
-  createdAt          DateTime @default(now())
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  broadcasterId    String
+  broadcasterLogin String
+  broadcasterName  String
+  profileImageUrl  String?
+  notes            String?
+  priority         Int      @default(0)
+  createdAt        DateTime @default(now())
 
   @@unique([userId, broadcasterId])
 }

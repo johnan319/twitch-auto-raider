@@ -46,8 +46,8 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod
 
-# Copy generated Prisma client from builder (generated code in .prisma)
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# Copy generated Prisma client from builder
+COPY --from=builder /app/packages/database/generated ./packages/database/generated
 
 USER api
 
