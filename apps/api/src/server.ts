@@ -1,51 +1,55 @@
-console.log('[BOOT] Starting...');
+console.log('[BOOT] Starting server...');
+console.log('[BOOT] Node version:', process.version);
+console.log('[BOOT] Environment:', process.env.NODE_ENV);
 
 // Catch any uncaught errors
 process.on('uncaughtException', (err) => {
   console.error('[FATAL] Uncaught Exception:', err);
+  process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
   console.error('[FATAL] Unhandled Rejection:', reason);
 });
 
-import Fastify from 'fastify';
-import cors from '@fastify/cors';
-import cookie from '@fastify/cookie';
-import session from '@fastify/session';
-
-console.log('[BOOT] Core modules loaded');
-
-import { config } from './lib/config.js';
-
-console.log('[BOOT] Config loaded, port:', config.port);
-
-import { authRoutes } from './routes/auth.js';
-import { statusRoutes } from './routes/status.js';
-import { recommendationsRoutes } from './routes/recommendations.js';
-import { raidRoutes } from './routes/raid.js';
-import { warmlistRoutes } from './routes/warmlist.js';
-import { settingsRoutes } from './routes/settings.js';
-
-console.log('[BOOT] Routes loaded');
-
-const isProduction = process.env.NODE_ENV === 'production';
-
-const fastify = Fastify({
-  logger: {
-    level: 'info',
-  },
-});
-
-async function main() {
-  console.log('[MAIN] Starting main function');
-
+// Use dynamic imports so we can catch and log errors
+async function boot() {
   try {
+    console.log('[BOOT] Loading Fastify...');
+    const { default: Fastify } = await import('fastify');
+    const { default: cors } = await import('@fastify/cors');
+    const { default: cookie } = await import('@fastify/cookie');
+    const { default: session } = await import('@fastify/session');
+    console.log('[BOOT] Core modules loaded');
+
+    console.log('[BOOT] Loading config...');
+    const { config } = await import('./lib/config.js');
+    console.log('[BOOT] Config loaded, port:', config.port);
+
+    console.log('[BOOT] Loading routes...');
+    const { authRoutes } = await import('./routes/auth.js');
+    const { statusRoutes } = await import('./routes/status.js');
+    const { recommendationsRoutes } = await import('./routes/recommendations.js');
+    const { raidRoutes } = await import('./routes/raid.js');
+    const { warmlistRoutes } = await import('./routes/warmlist.js');
+    const { settingsRoutes } = await import('./routes/settings.js');
+    console.log('[BOOT] Routes loaded');
+
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    const fastify = Fastify({
+      logger: {
+        level: 'info',
+      },
+    });
+
+    console.log('[MAIN] Registering plugins...');
+
     await fastify.register(cors, {
       origin: config.cors.origin,
       credentials: true,
     });
-    console.log('[MAIN] CORS registered');
+    console.log('[MAIN] CORS registered, origin:', config.cors.origin);
 
     await fastify.register(cookie);
     console.log('[MAIN] Cookie registered');
@@ -77,15 +81,13 @@ async function main() {
     });
 
     // Start server
+    console.log('[MAIN] Starting to listen on port', config.port);
     const address = await fastify.listen({ port: config.port, host: '0.0.0.0' });
     console.log(`[MAIN] Server listening on ${address}`);
   } catch (err) {
-    console.error('[MAIN] Fatal error:', err);
+    console.error('[BOOT] Fatal error during startup:', err);
     process.exit(1);
   }
 }
 
-main().catch((err) => {
-  console.error('[BOOT] Main failed:', err);
-  process.exit(1);
-});
+boot();
