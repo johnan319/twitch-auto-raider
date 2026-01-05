@@ -214,6 +214,11 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     const authHeader = request.headers.authorization;
     let userId: string | undefined;
 
+    log.info({
+      hasAuthHeader: !!authHeader,
+      authHeaderPrefix: authHeader?.substring(0, 15),
+    }, '/api/me called');
+
     if (authHeader?.startsWith('Bearer ')) {
       const bearerToken = authHeader.substring(7);
       try {
@@ -224,7 +229,9 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
         if (tokenRecord && tokenRecord.expiresAt > new Date()) {
           const tokenData = JSON.parse(tokenRecord.data);
           userId = tokenData.userId;
-          log.debug({ userId }, 'Authenticated via bearer token');
+          log.info({ userId }, 'Authenticated via bearer token');
+        } else {
+          log.warn({ tokenFound: !!tokenRecord }, 'Bearer token invalid or expired');
         }
       } catch (error) {
         log.error({ error }, 'Error validating bearer token');

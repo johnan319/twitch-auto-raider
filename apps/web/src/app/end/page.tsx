@@ -40,10 +40,10 @@ function EndStreamContent() {
     if (authToken) {
       // Exchange token then fetch user
       api.exchangeAuthToken(authToken)
-        .then(() => {
-          // Remove token from URL
+        .then(async () => {
+          // Fetch user first, then remove token from URL
+          await fetchUser();
           router.replace('/end');
-          return fetchUser();
         })
         .catch((err) => {
           console.error('Token exchange failed:', err);
