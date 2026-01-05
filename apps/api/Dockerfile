@@ -29,6 +29,9 @@ RUN pnpm --filter api build
 # Production stage
 FROM node:20-alpine AS runner
 
+# Install OpenSSL for Prisma engine
+RUN apk add --no-cache openssl
+
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
@@ -56,8 +59,5 @@ COPY --from=builder /app/packages/database/generated ./packages/database/generat
 USER api
 
 ENV NODE_ENV=production
-ENV PORT=3001
-
-EXPOSE 3001
 
 CMD ["node", "apps/api/dist/server.js"]
