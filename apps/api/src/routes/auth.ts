@@ -129,10 +129,11 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       // Subscribe to EventSub for this user (temporarily disabled)
       // await eventSubService.subscribeToRaids(twitchUser.id, tokens.access_token);
 
-      // Set session
+      // Set session and save before redirect
       request.session.userId = user.id;
+      await request.session.save();
 
-      log.info({ userId: user.id, twitchUserId: twitchUser.id, login: twitchUser.login }, 'Login successful');
+      log.info({ userId: user.id, twitchUserId: twitchUser.id, login: twitchUser.login, sessionId: request.session.sessionId }, 'Login successful, session saved');
 
       return reply.redirect(`${config.cors.origin}/end`);
     } catch (err) {

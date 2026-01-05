@@ -99,7 +99,8 @@ async function boot() {
       cookie: {
         secure: isProduction,
         httpOnly: true,
-        sameSite: 'lax',
+        // Use 'none' for cross-origin cookies (web app on different subdomain)
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       },
       saveUninitialized: false,
