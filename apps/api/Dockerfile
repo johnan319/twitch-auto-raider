@@ -48,6 +48,10 @@ COPY --from=builder /app/packages/database/package.json ./packages/database/
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY apps/api/scripts/start.sh ./apps/api/scripts/
+
+# Make start script executable
+RUN chmod +x ./apps/api/scripts/start.sh
 
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod
@@ -60,4 +64,4 @@ USER api
 
 ENV NODE_ENV=production
 
-CMD ["node", "apps/api/dist/server.js"]
+CMD ["/app/apps/api/scripts/start.sh"]
