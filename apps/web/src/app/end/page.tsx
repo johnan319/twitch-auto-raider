@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Nav } from '@/components/Nav';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -9,7 +9,7 @@ import { RaidPanel } from '@/components/RaidPanel';
 import { useStreamStatus, useRecommendations } from '@/lib/hooks';
 import * as api from '@/lib/api';
 
-export default function EndStreamPage() {
+function EndStreamContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<api.User | null>(null);
@@ -172,5 +172,13 @@ export default function EndStreamPage() {
         )}
       </main>
     </>
+  );
+}
+
+export default function EndStreamPage() {
+  return (
+    <Suspense fallback={<div className="loading">Loading...</div>}>
+      <EndStreamContent />
+    </Suspense>
   );
 }
