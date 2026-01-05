@@ -9,7 +9,7 @@ interface RaidPanelProps {
   onCanceled: () => void;
 }
 
-export function RaidPanel({ targetName, raidHistoryId, onCanceled }: RaidPanelProps) {
+export function RaidPanel({ targetName, raidHistoryId: _raidHistoryId, onCanceled }: RaidPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
