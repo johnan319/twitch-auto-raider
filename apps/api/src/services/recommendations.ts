@@ -200,8 +200,8 @@ export class RecommendationsService {
       },
       select: { toBroadcasterId: true, startedAt: true },
     });
-    const recentRaidMap = new Map(
-      recentRaids.map((r) => [r.toBroadcasterId, r.startedAt])
+    const recentRaidMap = new Map<string, Date>(
+      recentRaids.map((r): [string, Date] => [r.toBroadcasterId, r.startedAt])
     );
 
     // Get past ratings for scoring
@@ -263,7 +263,7 @@ export class RecommendationsService {
           isMature: stream.is_mature,
           startedAt: stream.started_at,
           source: 'warmlist',
-          lastRaidDate: recentRaidMap.get(entry.broadcasterId) || null,
+          lastRaidDate: recentRaidMap.get(entry.broadcasterId) ?? null,
           warmListPriority: entry.priority,
           warmListNotes: entry.notes,
         });
@@ -320,7 +320,7 @@ export class RecommendationsService {
           isMature: stream.is_mature,
           startedAt: stream.started_at,
           source: 'discovery',
-          lastRaidDate: recentRaidMap.get(stream.user_id) || null,
+          lastRaidDate: recentRaidMap.get(stream.user_id) ?? null,
           warmListPriority: null,
           warmListNotes: null,
         });

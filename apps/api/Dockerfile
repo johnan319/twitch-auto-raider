@@ -18,7 +18,7 @@ COPY packages/database ./packages/database
 COPY apps/api ./apps/api
 
 # Generate Prisma client
-RUN pnpm --filter database prisma generate
+RUN cd packages/database && npx prisma generate
 
 # Build API
 RUN pnpm --filter api build
@@ -47,7 +47,7 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 RUN pnpm install --frozen-lockfile --prod
 
 # Generate Prisma client in production
-RUN pnpm --filter database prisma generate
+RUN cd packages/database && npx prisma generate
 
 USER api
 
