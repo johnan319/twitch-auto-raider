@@ -16,7 +16,7 @@ import { recommendationsRoutes } from './routes/recommendations.js';
 import { raidRoutes } from './routes/raid.js';
 import { warmlistRoutes } from './routes/warmlist.js';
 import { settingsRoutes } from './routes/settings.js';
-import { eventSubService } from './services/eventsub.js';
+// import { eventSubService } from './services/eventsub.js'; // Temporarily disabled
 import { logger } from './lib/logger.js';
 
 console.log('[STARTUP] All modules loaded');
