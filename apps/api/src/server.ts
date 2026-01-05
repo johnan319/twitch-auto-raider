@@ -80,6 +80,7 @@ async function boot() {
 
     await fastify.register(session, {
       secret: config.session.secret,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       store: sessionStore as any,
       cookie: {
         secure: isProduction,
