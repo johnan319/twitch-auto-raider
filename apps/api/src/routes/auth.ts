@@ -152,15 +152,22 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Get current user
   fastify.get('/api/me', async (request, reply) => {
+    const cookieHeader = request.headers.cookie;
     log.info({
       ip: request.ip,
       sessionId: request.session.sessionId,
       userId: request.session.userId,
       sessionKeys: Object.keys(request.session),
+      hasCookieHeader: !!cookieHeader,
+      cookieHeader: cookieHeader?.substring(0, 100), // First 100 chars
     }, '/api/me called');
 
     if (!request.session.userId) {
-      log.warn({ ip: request.ip, sessionId: request.session.sessionId }, 'Unauthenticated /api/me request');
+      log.warn({
+        ip: request.ip,
+        sessionId: request.session.sessionId,
+        hasCookieHeader: !!cookieHeader,
+      }, 'Unauthenticated /api/me request');
       return reply.status(401).send({ error: 'Not authenticated' });
     }
 
