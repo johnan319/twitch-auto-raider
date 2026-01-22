@@ -153,7 +153,8 @@ exports.Prisma.SettingsScalarFieldEnum = {
   sameCategoryOnly: 'sameCategoryOnly',
   streamDurationPreference: 'streamDurationPreference',
   raidMessage: 'raidMessage',
-  raidRunMessage: 'raidRunMessage'
+  raidRunMessage: 'raidRunMessage',
+  raidArrivalMessage: 'raidArrivalMessage'
 };
 
 exports.Prisma.WarmListEntryScalarFieldEnum = {

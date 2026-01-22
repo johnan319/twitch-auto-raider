@@ -62,6 +62,7 @@ model Settings {
   // Chat messages
   raidMessage       String  @default("We're raiding @{target} - show them some love!")
   raidRunMessage    String  @default("Raid and run! See you next stream!")
+  raidArrivalMessage String @default("")
 }
 
 enum MatureFilter {

@@ -45,6 +45,7 @@ export default function SettingsPage() {
     streamDurationPreference: 'ANY' as DurationPreference,
     raidMessage: "We're raiding @{target} - show them some love!",
     raidRunMessage: 'Raid and run! See you next stream!',
+    raidArrivalMessage: '',
   });
 
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function SettingsPage() {
         streamDurationPreference: settings.streamDurationPreference,
         raidMessage: settings.raidMessage,
         raidRunMessage: settings.raidRunMessage,
+        raidArrivalMessage: settings.raidArrivalMessage || '',
       });
     }
   }, [settings]);
@@ -345,6 +347,20 @@ export default function SettingsPage() {
                 />
                 <p className="help">
                   This message is sent right after the raid announcement.
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="raidArrivalMessage">Arrival Message (Target's Chat)</label>
+                <textarea
+                  id="raidArrivalMessage"
+                  value={formData.raidArrivalMessage}
+                  onChange={(e) => setFormData({ ...formData, raidArrivalMessage: e.target.value })}
+                  rows={2}
+                  placeholder="Hey! Just raided in from {source} - happy to be here!"
+                />
+                <p className="help">
+                  Sent to the target's chat after the raid completes. Use {'{target}'} for their name, {'{source}'} for your name, {'{viewers}'} for viewer count. Leave empty to disable.
                 </p>
               </div>
             </section>

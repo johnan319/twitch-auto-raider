@@ -91,6 +91,7 @@ export function createMockSettings(overrides = {}) {
     streamDurationPreference: DurationPreference.ANY,
     raidMessage: "We're raiding @{target} - show them some love!",
     raidRunMessage: 'Raid and run! See you next stream!',
+    raidArrivalMessage: '',
     ...overrides,
   };
 }

@@ -2,6 +2,8 @@ import WebSocket from 'ws';
 import { prisma } from '../lib/prisma.js';
 import { config } from '../lib/config.js';
 import { loggers } from '../lib/logger.js';
+import { twitchApi } from './twitch-api.js';
+import { getAccessToken } from '../routes/auth.js';
 
 const log = loggers.eventsub;
 const EVENTSUB_WS_URL = 'wss://eventsub.wss.twitch.tv/ws';
@@ -152,6 +154,47 @@ export class EventSubService {
           viewerCountAtRaid: event.viewers,
         },
       });
+
+      // Send arrival message to target's chat if configured
+      await this.sendArrivalMessage(event);
+    }
+  }
+
+  private async sendArrivalMessage(event: NonNullable<EventSubMessage['payload']['event']>): Promise<void> {
+    try {
+      // Find user by their Twitch ID
+      const user = await prisma.user.findUnique({
+        where: { twitchUserId: event.from_broadcaster_user_id },
+        include: { settings: true },
+      });
+
+      if (!user?.settings?.raidArrivalMessage) {
+        return; // No arrival message configured
+      }
+
+      const arrivalMessage = user.settings.raidArrivalMessage
+        .replace('{target}', event.to_broadcaster_user_name)
+        .replace('{source}', event.from_broadcaster_user_name)
+        .replace('{viewers}', event.viewers.toString());
+
+      if (!arrivalMessage.trim()) {
+        return; // Empty message after replacements
+      }
+
+      const accessToken = await getAccessToken(user.id);
+
+      await twitchApi.sendChatMessage(
+        accessToken,
+        event.to_broadcaster_user_id, // Target's channel
+        user.twitchUserId,             // Sender (raider)
+        arrivalMessage
+      );
+    } catch (error) {
+      log.warn({
+        fromBroadcasterId: event.from_broadcaster_user_id,
+        toBroadcasterId: event.to_broadcaster_user_id,
+        error: error instanceof Error ? error.message : String(error),
+      }, 'Failed to send arrival message (non-fatal)');
     }
   }
 

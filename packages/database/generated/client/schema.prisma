@@ -60,8 +60,9 @@ model Settings {
   streamDurationPreference DurationPreference @default(ANY)
 
   // Chat messages
-  raidMessage    String @default("We're raiding @{target} - show them some love!")
-  raidRunMessage String @default("Raid and run! See you next stream!")
+  raidMessage        String @default("We're raiding @{target} - show them some love!")
+  raidRunMessage     String @default("Raid and run! See you next stream!")
+  raidArrivalMessage String @default("")
 }
 
 enum MatureFilter {

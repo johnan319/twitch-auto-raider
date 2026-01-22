@@ -25,6 +25,7 @@ const updateSettingsSchema = z.object({
   // Chat messages
   raidMessage: z.string().max(500).optional(),
   raidRunMessage: z.string().max(500).optional(),
+  raidArrivalMessage: z.string().max(500).optional(),
 });
 
 const addExcludeSchema = z.object({

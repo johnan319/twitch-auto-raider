@@ -116,6 +116,7 @@ export interface Settings {
   streamDurationPreference: DurationPreference;
   raidMessage: string;
   raidRunMessage: string;
+  raidArrivalMessage: string;
 }
 
 export interface CategoryBlocklistEntry {

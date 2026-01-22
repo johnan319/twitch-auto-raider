@@ -3631,6 +3631,7 @@ export namespace Prisma {
     streamDurationPreference: $Enums.DurationPreference | null
     raidMessage: string | null
     raidRunMessage: string | null
+    raidArrivalMessage: string | null
   }
 
   export type SettingsMaxAggregateOutputType = {
@@ -3645,6 +3646,7 @@ export namespace Prisma {
     streamDurationPreference: $Enums.DurationPreference | null
     raidMessage: string | null
     raidRunMessage: string | null
+    raidArrivalMessage: string | null
   }
 
   export type SettingsCountAggregateOutputType = {
@@ -3660,6 +3662,7 @@ export namespace Prisma {
     streamDurationPreference: number
     raidMessage: number
     raidRunMessage: number
+    raidArrivalMessage: number
     _all: number
   }
 
@@ -3686,6 +3689,7 @@ export namespace Prisma {
     streamDurationPreference?: true
     raidMessage?: true
     raidRunMessage?: true
+    raidArrivalMessage?: true
   }
 
   export type SettingsMaxAggregateInputType = {
@@ -3700,6 +3704,7 @@ export namespace Prisma {
     streamDurationPreference?: true
     raidMessage?: true
     raidRunMessage?: true
+    raidArrivalMessage?: true
   }
 
   export type SettingsCountAggregateInputType = {
@@ -3715,6 +3720,7 @@ export namespace Prisma {
     streamDurationPreference?: true
     raidMessage?: true
     raidRunMessage?: true
+    raidArrivalMessage?: true
     _all?: true
   }
 
@@ -3817,6 +3823,7 @@ export namespace Prisma {
     streamDurationPreference: $Enums.DurationPreference
     raidMessage: string
     raidRunMessage: string
+    raidArrivalMessage: string
     _count: SettingsCountAggregateOutputType | null
     _avg: SettingsAvgAggregateOutputType | null
     _sum: SettingsSumAggregateOutputType | null
@@ -3851,6 +3858,7 @@ export namespace Prisma {
     streamDurationPreference?: boolean
     raidMessage?: boolean
     raidRunMessage?: boolean
+    raidArrivalMessage?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["settings"]>
 
@@ -3867,6 +3875,7 @@ export namespace Prisma {
     streamDurationPreference?: boolean
     raidMessage?: boolean
     raidRunMessage?: boolean
+    raidArrivalMessage?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["settings"]>
 
@@ -3883,6 +3892,7 @@ export namespace Prisma {
     streamDurationPreference?: boolean
     raidMessage?: boolean
     raidRunMessage?: boolean
+    raidArrivalMessage?: boolean
   }
 
   export type SettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3910,6 +3920,7 @@ export namespace Prisma {
       streamDurationPreference: $Enums.DurationPreference
       raidMessage: string
       raidRunMessage: string
+      raidArrivalMessage: string
     }, ExtArgs["result"]["settings"]>
     composites: {}
   }
@@ -4316,6 +4327,7 @@ export namespace Prisma {
     readonly streamDurationPreference: FieldRef<"Settings", 'DurationPreference'>
     readonly raidMessage: FieldRef<"Settings", 'String'>
     readonly raidRunMessage: FieldRef<"Settings", 'String'>
+    readonly raidArrivalMessage: FieldRef<"Settings", 'String'>
   }
     
 
@@ -9489,7 +9501,8 @@ export namespace Prisma {
     sameCategoryOnly: 'sameCategoryOnly',
     streamDurationPreference: 'streamDurationPreference',
     raidMessage: 'raidMessage',
-    raidRunMessage: 'raidRunMessage'
+    raidRunMessage: 'raidRunMessage',
+    raidArrivalMessage: 'raidArrivalMessage'
   };
 
   export type SettingsScalarFieldEnum = (typeof SettingsScalarFieldEnum)[keyof typeof SettingsScalarFieldEnum]
@@ -9880,6 +9893,7 @@ export namespace Prisma {
     streamDurationPreference?: EnumDurationPreferenceFilter<"Settings"> | $Enums.DurationPreference
     raidMessage?: StringFilter<"Settings"> | string
     raidRunMessage?: StringFilter<"Settings"> | string
+    raidArrivalMessage?: StringFilter<"Settings"> | string
     user?: XOR<UserRelationFilter, UserWhereInput>
   }
 
@@ -9896,6 +9910,7 @@ export namespace Prisma {
     streamDurationPreference?: SortOrder
     raidMessage?: SortOrder
     raidRunMessage?: SortOrder
+    raidArrivalMessage?: SortOrder
     user?: UserOrderByWithRelationInput
   }
 
@@ -9915,6 +9930,7 @@ export namespace Prisma {
     streamDurationPreference?: EnumDurationPreferenceFilter<"Settings"> | $Enums.DurationPreference
     raidMessage?: StringFilter<"Settings"> | string
     raidRunMessage?: StringFilter<"Settings"> | string
+    raidArrivalMessage?: StringFilter<"Settings"> | string
     user?: XOR<UserRelationFilter, UserWhereInput>
   }, "id" | "userId">
 
@@ -9931,6 +9947,7 @@ export namespace Prisma {
     streamDurationPreference?: SortOrder
     raidMessage?: SortOrder
     raidRunMessage?: SortOrder
+    raidArrivalMessage?: SortOrder
     _count?: SettingsCountOrderByAggregateInput
     _avg?: SettingsAvgOrderByAggregateInput
     _max?: SettingsMaxOrderByAggregateInput
@@ -9954,6 +9971,7 @@ export namespace Prisma {
     streamDurationPreference?: EnumDurationPreferenceWithAggregatesFilter<"Settings"> | $Enums.DurationPreference
     raidMessage?: StringWithAggregatesFilter<"Settings"> | string
     raidRunMessage?: StringWithAggregatesFilter<"Settings"> | string
+    raidArrivalMessage?: StringWithAggregatesFilter<"Settings"> | string
   }
 
   export type WarmListEntryWhereInput = {
@@ -10448,6 +10466,7 @@ export namespace Prisma {
     streamDurationPreference?: $Enums.DurationPreference
     raidMessage?: string
     raidRunMessage?: string
+    raidArrivalMessage?: string
     user: UserCreateNestedOneWithoutSettingsInput
   }
 
@@ -10464,6 +10483,7 @@ export namespace Prisma {
     streamDurationPreference?: $Enums.DurationPreference
     raidMessage?: string
     raidRunMessage?: string
+    raidArrivalMessage?: string
   }
 
   export type SettingsUpdateInput = {
@@ -10478,6 +10498,7 @@ export namespace Prisma {
     streamDurationPreference?: EnumDurationPreferenceFieldUpdateOperationsInput | $Enums.DurationPreference
     raidMessage?: StringFieldUpdateOperationsInput | string
     raidRunMessage?: StringFieldUpdateOperationsInput | string
+    raidArrivalMessage?: StringFieldUpdateOperationsInput | string
     user?: UserUpdateOneRequiredWithoutSettingsNestedInput
   }
 
@@ -10494,6 +10515,7 @@ export namespace Prisma {
     streamDurationPreference?: EnumDurationPreferenceFieldUpdateOperationsInput | $Enums.DurationPreference
     raidMessage?: StringFieldUpdateOperationsInput | string
     raidRunMessage?: StringFieldUpdateOperationsInput | string
+    raidArrivalMessage?: StringFieldUpdateOperationsInput | string
   }
 
   export type SettingsCreateManyInput = {
@@ -10509,6 +10531,7 @@ export namespace Prisma {
     streamDurationPreference?: $Enums.DurationPreference
     raidMessage?: string
     raidRunMessage?: string
+    raidArrivalMessage?: string
   }
 
   export type SettingsUpdateManyMutationInput = {
@@ -10523,6 +10546,7 @@ export namespace Prisma {
     streamDurationPreference?: EnumDurationPreferenceFieldUpdateOperationsInput | $Enums.DurationPreference
     raidMessage?: StringFieldUpdateOperationsInput | string
     raidRunMessage?: StringFieldUpdateOperationsInput | string
+    raidArrivalMessage?: StringFieldUpdateOperationsInput | string
   }
 
   export type SettingsUncheckedUpdateManyInput = {
@@ -10538,6 +10562,7 @@ export namespace Prisma {
     streamDurationPreference?: EnumDurationPreferenceFieldUpdateOperationsInput | $Enums.DurationPreference
     raidMessage?: StringFieldUpdateOperationsInput | string
     raidRunMessage?: StringFieldUpdateOperationsInput | string
+    raidArrivalMessage?: StringFieldUpdateOperationsInput | string
   }
 
   export type WarmListEntryCreateInput = {
@@ -11150,6 +11175,7 @@ export namespace Prisma {
     streamDurationPreference?: SortOrder
     raidMessage?: SortOrder
     raidRunMessage?: SortOrder
+    raidArrivalMessage?: SortOrder
   }
 
   export type SettingsAvgOrderByAggregateInput = {
@@ -11169,6 +11195,7 @@ export namespace Prisma {
     streamDurationPreference?: SortOrder
     raidMessage?: SortOrder
     raidRunMessage?: SortOrder
+    raidArrivalMessage?: SortOrder
   }
 
   export type SettingsMinOrderByAggregateInput = {
@@ -11183,6 +11210,7 @@ export namespace Prisma {
     streamDurationPreference?: SortOrder
     raidMessage?: SortOrder
     raidRunMessage?: SortOrder
+    raidArrivalMessage?: SortOrder
   }
 
   export type SettingsSumOrderByAggregateInput = {
@@ -12214,6 +12242,7 @@ export namespace Prisma {
     streamDurationPreference?: $Enums.DurationPreference
     raidMessage?: string
     raidRunMessage?: string
+    raidArrivalMessage?: string
   }
 
   export type SettingsUncheckedCreateWithoutUserInput = {
@@ -12228,6 +12257,7 @@ export namespace Prisma {
     streamDurationPreference?: $Enums.DurationPreference
     raidMessage?: string
     raidRunMessage?: string
+    raidArrivalMessage?: string
   }
 
   export type SettingsCreateOrConnectWithoutUserInput = {
@@ -12405,6 +12435,7 @@ export namespace Prisma {
     streamDurationPreference?: EnumDurationPreferenceFieldUpdateOperationsInput | $Enums.DurationPreference
     raidMessage?: StringFieldUpdateOperationsInput | string
     raidRunMessage?: StringFieldUpdateOperationsInput | string
+    raidArrivalMessage?: StringFieldUpdateOperationsInput | string
   }
 
   export type SettingsUncheckedUpdateWithoutUserInput = {
@@ -12419,6 +12450,7 @@ export namespace Prisma {
     streamDurationPreference?: EnumDurationPreferenceFieldUpdateOperationsInput | $Enums.DurationPreference
     raidMessage?: StringFieldUpdateOperationsInput | string
     raidRunMessage?: StringFieldUpdateOperationsInput | string
+    raidArrivalMessage?: StringFieldUpdateOperationsInput | string
   }
 
   export type WarmListEntryUpsertWithWhereUniqueWithoutUserInput = {
